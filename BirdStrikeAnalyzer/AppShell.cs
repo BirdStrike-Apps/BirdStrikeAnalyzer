@@ -39,6 +39,15 @@ public sealed class AppShell : Shell
                 () => new DoorManagementPage())
         });
 
+        var birdStrikesTab = new Tab { Title = "Bird Strikes" };
+        birdStrikesTab.Items.Add(new ShellContent
+        {
+            Title = "Bird Strikes",
+            Route = "birdstrikes",
+            ContentTemplate = new DataTemplate(
+                () => new BirdStrikesPage())
+        });
+
         // About
         var aboutTab = new Tab { Title = "About" };
         aboutTab.Items.Add(new ShellContent
@@ -50,6 +59,7 @@ public sealed class AppShell : Shell
         tabs.Items.Add(homeTab);
         tabs.Items.Add(buildingsTab);
         tabs.Items.Add(doorsTab);
+        tabs.Items.Add(birdStrikesTab);
         tabs.Items.Add(aboutTab);
         Items.Add(tabs);
     }
