@@ -15,14 +15,6 @@ public partial class BirdStrikesPage : ContentPage
         ConfirmedFilter.SelectedIndex = 0;
     }
 
-
-
-    private void OnMenuClicked(object? sender, EventArgs e)
-    {
-        IsSummaryVisible = !IsSummaryVisible;
-        OnPropertyChanged(nameof(IsSummaryVisible));
-    }
-
     private void OnFilterClicked(object? sender, EventArgs e)
     {
         FilterPanel.IsVisible = !FilterPanel.IsVisible;
