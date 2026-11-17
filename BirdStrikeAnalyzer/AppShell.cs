@@ -18,6 +18,28 @@ public sealed class AppShell : Shell
             Route = "home",
             ContentTemplate = new DataTemplate(() => services.GetRequiredService<MainPage>())
         });
+
+         // Buildings
+        var buildingsTab = new Tab { Title = "Buildings" };
+        buildingsTab.Items.Add(new ShellContent
+        {
+            Title = "Buildings",
+            Route = "buildings",
+            ContentTemplate = new DataTemplate(
+                () => new BuildingManagementPage())
+        });
+
+        // Doors
+        var doorsTab = new Tab { Title = "Doors" };
+        doorsTab.Items.Add(new ShellContent
+        {
+            Title = "Doors",
+            Route = "doors",
+            ContentTemplate = new DataTemplate(
+                () => new DoorManagementPage())
+        });
+
+        // About
         var aboutTab = new Tab { Title = "About" };
         aboutTab.Items.Add(new ShellContent
         {
@@ -26,6 +48,8 @@ public sealed class AppShell : Shell
             ContentTemplate = new DataTemplate(() => services.GetRequiredService<AboutPage>())
         });
         tabs.Items.Add(homeTab);
+        tabs.Items.Add(buildingsTab);
+        tabs.Items.Add(doorsTab);
         tabs.Items.Add(aboutTab);
         Items.Add(tabs);
     }
