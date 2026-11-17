@@ -6,10 +6,11 @@ public sealed class AppShell : Shell
 {
     public AppShell(IServiceProvider services)
     {
-        Title = "ThreeTierMauiSample";
+        Title = "BirdStrike Analyzer";
         FlyoutBehavior = FlyoutBehavior.Flyout;
         FlyoutBackgroundColor = Colors.White;
         Routing.RegisterRoute(nameof(DetailsPage), typeof(DetailsPage));
+        Routing.RegisterRoute(nameof(MapViewPage), typeof(MapViewPage));
 
         SetItemTemplate(this, new DataTemplate(() =>
         {
@@ -45,7 +46,6 @@ public sealed class AppShell : Shell
         Items.Add(MakeItem("Doors", "doors", () => new DoorManagementPage()));
         Items.Add(MakeItem("Bird Strikes", "birdstrikes", () => new BirdStrikesPage()));
         Items.Add(MakeItem("Analyzer", "analyzer", () => services.GetRequiredService<AnalyzerPage>()));
-        Items.Add(MakeItem("About", "about", () => services.GetRequiredService<AboutPage>()));
     }
 
     private static FlyoutItem MakeItem(string title, string route, Func<Page> createPage)
@@ -60,3 +60,4 @@ public sealed class AppShell : Shell
         return item;
     }
 }
+

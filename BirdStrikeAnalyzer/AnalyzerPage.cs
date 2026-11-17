@@ -106,7 +106,7 @@ public sealed class AnalyzerPage : ContentPage
             Padding = new Thickness(18, 8),
             VerticalOptions = LayoutOptions.Center
         };
-        exportButton.Clicked += async (_, _) => await DisplayAlert("Export", "Export can be connected to the report data source later.", "OK");
+        exportButton.Clicked += async (_, _) => await DisplayAlertAsync("Export", "Export can be connected to the report data source later.", "OK");
         Grid.SetColumn(exportButton, 1);
         header.Children.Add(exportButton);
         root.Children.Add(header);
@@ -267,7 +267,7 @@ public sealed class AnalyzerPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Unable to load reports", ex.Message, "OK");
+            await DisplayAlertAsync("Unable to load reports", ex.Message, "OK");
         }
     }
 
@@ -277,7 +277,7 @@ public sealed class AnalyzerPage : ContentPage
             _selectedColumns.All(selected => selected.Column.Name != candidate.Name));
         if (nextColumn is null)
         {
-            await DisplayAlert("All columns shown", "Every available report column is already in the table.", "OK");
+            await DisplayAlertAsync("All columns shown", "Every available report column is already in the table.", "OK");
             return;
         }
 
@@ -503,7 +503,7 @@ public sealed class AnalyzerPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Unable to confirm report", ex.Message, "OK");
+            await DisplayAlertAsync("Unable to confirm report", ex.Message, "OK");
         }
     }
 

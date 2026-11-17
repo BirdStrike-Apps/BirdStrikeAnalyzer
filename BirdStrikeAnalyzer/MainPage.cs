@@ -59,6 +59,9 @@ public sealed class MainPage : ContentPage
             MinimumHeightRequest = 300,
             BackgroundColor = Colors.White
         };
+        var mapTap = new TapGestureRecognizer();
+        mapTap.Tapped += async (_, _) => await Shell.Current.GoToAsync(nameof(MapViewPage));
+        map.GestureRecognizers.Add(mapTap);
         var chart = new GraphicsView
         {
             Drawable = new ReportsBarChartDrawable(HomeDashboardData.Months, HomeDashboardData.Series),
@@ -177,7 +180,7 @@ public sealed class MainPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Unable to load reports", ex.Message, "OK");
+            await DisplayAlertAsync("Unable to load reports", ex.Message, "OK");
         }
     }
 
@@ -227,7 +230,7 @@ public sealed class MainPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Unable to confirm report", ex.Message, "OK");
+            await DisplayAlertAsync("Unable to confirm report", ex.Message, "OK");
         }
     }
 
@@ -245,3 +248,4 @@ public sealed class MainPage : ContentPage
         }
     }
 }
+
