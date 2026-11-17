@@ -123,10 +123,6 @@ public sealed class MapViewPage : ContentPage
                 }
             }
         };
-        var backButton = new Button { Text = "Back to Home", FontSize = 14, Padding = new Thickness(14, 8), VerticalOptions = LayoutOptions.Center };
-        backButton.Clicked += async (_, _) => await Shell.Current.GoToAsync("..");
-        Grid.SetColumn(backButton, 1);
-        header.Children.Add(backButton);
 
         Content = new Grid
         {
