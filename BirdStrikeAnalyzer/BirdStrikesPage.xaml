@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="BirdStrikeAnalyzer.BirdStrikesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Bird Strikes"
+    BackgroundColor="#F3F7FB">
+
+    <Grid ColumnDefinitions="*,300" RowDefinitions="Auto,*">
+        <Grid Grid.ColumnSpan="2" Padding="20,14" ColumnDefinitions="48,*,Auto" BackgroundColor="#9CCCF8">
+            <Button Text="☰" FontSize="25" Padding="0" BackgroundColor="Transparent" TextColor="#101820" Clicked="OnMenuClicked" />
+            <Label Grid.Column="1" Text="Bird Strike Reports" FontSize="25" VerticalOptions="Center" TextColor="#101820" />
+            <Button x:Name="FilterButton" Grid.Column="2" Text="Filter" Clicked="OnFilterClicked" BackgroundColor="#1682D4" TextColor="White" CornerRadius="4" Padding="18,8" />
+        </Grid>
+
+        <Grid Grid.Row="1" Padding="20" RowDefinitions="Auto,*" RowSpacing="12">
+            <Grid ColumnDefinitions="*,Auto" Padding="12,9" BackgroundColor="White">
+                <Label Text="Reporter     |     Date     |     Time" FontAttributes="Bold" VerticalOptions="Center" />
+                <Label Grid.Column="1" Text="•••" FontSize="18" VerticalOptions="Center" />
+            </Grid>
+            <CollectionView Grid.Row="1" ItemsSource="{Binding Reports}" SelectionMode="None" BackgroundColor="White">
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout Padding="24" Spacing="8" VerticalOptions="Center" HorizontalOptions="Center">
+                        <Label Text="No bird strike reports" FontSize="18" HorizontalTextAlignment="Center" />
+                        <Label Text="Reports will appear here when available." TextColor="#64748B" HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="12" ColumnDefinitions="*,120,90" RowDefinitions="Auto" BackgroundColor="White">
+                            <Label Text="{Binding Reporter}" />
+                            <Label Grid.Column="1" Text="{Binding Date}" />
+                            <Label Grid.Column="2" Text="{Binding Time}" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+
+        <ScrollView Grid.Column="1" Grid.Row="1" BackgroundColor="#9CCCF8" IsVisible="{Binding IsSummaryVisible}">
+            <VerticalStackLayout Padding="18" Spacing="14">
+                <Label Text="Reports&#10;by Reporter&#10;&amp; Time" FontSize="27" TextColor="#101820" />
+                <Border BackgroundColor="White" Stroke="#64748B" StrokeThickness="1" HeightRequest="44" />
+                <Grid ColumnDefinitions="*,*" RowDefinitions="82,82" ColumnSpacing="12" RowSpacing="10">
+                    <Border BackgroundColor="White" Stroke="#64748B" />
+                    <Border Grid.Column="1" BackgroundColor="White" Stroke="#64748B" />
+                    <Border Grid.Row="1" BackgroundColor="White" Stroke="#64748B" />
+                    <Border Grid.Row="1" Grid.Column="1" BackgroundColor="White" Stroke="#64748B" />
+                </Grid>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <ScrollView x:Name="FilterPanel" Grid.Column="1" Grid.Row="1" BackgroundColor="White" IsVisible="False">
+            <VerticalStackLayout Padding="18" Spacing="10">
+                <Label Text="Filter reports" FontSize="22" Margin="0,0,0,8" />
+                <Label Text="Date range" />
+                <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
+                    <DatePicker x:Name="StartDate" Format="MMM d, yyyy" />
+                    <Label Grid.Column="1" Text="to" VerticalOptions="Center" />
+                    <DatePicker x:Name="EndDate" Grid.Column="2" Format="MMM d, yyyy" />
+                </Grid>
+                <Label Text="Time range" />
+                <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
+                    <TimePicker x:Name="StartTime" />
+                    <Label Grid.Column="1" Text="to" VerticalOptions="Center" />
+                    <TimePicker x:Name="EndTime" Grid.Column="2" />
+                </Grid>
+                <Label Text="Reporter" />
+                <Entry x:Name="ReporterFilter" Placeholder="Any reporter" />
+                <Label Text="Location" />
+                <Entry x:Name="LocationFilter" Placeholder="Any location" />
+                <Label Text="Confirmed" />
+                <Picker x:Name="ConfirmedFilter" Title="Any status">
+                    <Picker.Items>
+                        <x:String>Any status</x:String>
+                        <x:String>Confirmed</x:String>
+                        <x:String>Unconfirmed</x:String>
+                    </Picker.Items>
+                </Picker>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,12,0,0">
+                    <Button Text="Clear" Clicked="OnClearFiltersClicked" />
+                    <Button Grid.Column="1" Text="Apply" Clicked="OnApplyFiltersClicked" BackgroundColor="#1682D4" TextColor="White" />
+                </Grid>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>
