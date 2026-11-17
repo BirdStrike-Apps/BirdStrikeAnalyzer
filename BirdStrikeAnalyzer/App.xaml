@@ -1,4 +1,4 @@
-﻿<?xml version = "1.0" encoding = "UTF-8" ?>
+<?xml version = "1.0" encoding = "UTF-8" ?>
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:BirdStrikeAnalyzer"
@@ -9,6 +9,73 @@
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- BirdStrike design theme. Entries defined here override the merged template styles above. -->
+            <Color x:Key="DesignBlue">#9CCCF8</Color>
+            <Color x:Key="DesignBlueStrong">#1682D4</Color>
+            <Color x:Key="DesignInk">#101820</Color>
+            <Color x:Key="DesignMuted">#64748B</Color>
+            <Color x:Key="DesignPaleBlue">#F3F7FB</Color>
+
+            <LinearGradientBrush x:Key="PageGradient" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#9CCCF8" Offset="0.0" />
+                <GradientStop Color="#F3F7FB" Offset="0.5" />
+                <GradientStop Color="#FFFFFF" Offset="1.0" />
+            </LinearGradientBrush>
+
+            <Style TargetType="Page" ApplyToDerivedTypes="True">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Background" Value="{StaticResource PageGradient}" />
+            </Style>
+
+            <Style TargetType="Label">
+                <Setter Property="TextColor" Value="{StaticResource DesignInk}" />
+                <Setter Property="FontFamily" Value="OpenSansRegular" />
+                <Setter Property="FontSize" Value="16" />
+            </Style>
+
+            <!-- White raised card with soft shadow -->
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="BackgroundColor" Value="White" />
+                <Setter Property="Stroke" Value="Transparent" />
+                <Setter Property="StrokeThickness" Value="0" />
+                <Setter Property="StrokeShape" Value="Rectangle" />
+                <Setter Property="Padding" Value="16,14" />
+                <Setter Property="Shadow">
+                    <Setter.Value>
+                        <Shadow Brush="Black" Opacity="0.25" Offset="0,3" Radius="4" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Flat light-blue button with dark text -->
+            <Style TargetType="Button">
+                <Setter Property="TextColor" Value="{StaticResource DesignInk}" />
+                <Setter Property="BackgroundColor" Value="{StaticResource DesignBlue}" />
+                <Setter Property="FontFamily" Value="OpenSansRegular" />
+                <Setter Property="FontSize" Value="18" />
+                <Setter Property="BorderWidth" Value="0" />
+                <Setter Property="CornerRadius" Value="2" />
+                <Setter Property="Padding" Value="14,16" />
+                <Setter Property="MinimumHeightRequest" Value="52" />
+                <Setter Property="Shadow">
+                    <Setter.Value>
+                        <Shadow Brush="Black" Opacity="0.2" Offset="0,2" Radius="3" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Light blue top bar, white tab bar with black icons/text -->
+            <Style TargetType="Shell" ApplyToDerivedTypes="True">
+                <Setter Property="Shell.BackgroundColor" Value="{StaticResource DesignBlue}" />
+                <Setter Property="Shell.ForegroundColor" Value="{StaticResource DesignInk}" />
+                <Setter Property="Shell.TitleColor" Value="{StaticResource DesignInk}" />
+                <Setter Property="Shell.NavBarHasShadow" Value="False" />
+                <Setter Property="Shell.TabBarBackgroundColor" Value="White" />
+                <Setter Property="Shell.TabBarForegroundColor" Value="{StaticResource DesignInk}" />
+                <Setter Property="Shell.TabBarTitleColor" Value="{StaticResource DesignInk}" />
+                <Setter Property="Shell.TabBarUnselectedColor" Value="{StaticResource DesignInk}" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

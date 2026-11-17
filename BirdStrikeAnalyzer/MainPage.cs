@@ -8,25 +8,37 @@ public sealed class MainPage : ContentPage
     private readonly Label _connectionStatus = new()
     {
         Text = "Supabase has not been contacted. The app is ready to use.",
-        TextColor = Color.FromArgb("#475467")
+        TextColor = Color.FromArgb("#475467"),
+        FontSize = 14
     };
 
     public MainPage(BusinessLogic businessLogic)
     {
         _businessLogic = businessLogic;
         Title = "Home";
-        Content = new VerticalStackLayout
+        Content = new ScrollView
         {
-            Padding = new Thickness(24),
-            Spacing = 18,
-            VerticalOptions = LayoutOptions.Center,
-            Children =
+            Content = new VerticalStackLayout
             {
-                new Label { Text = "MAUI + Supabase", FontSize = 28, FontAttributes = FontAttributes.Bold, HorizontalOptions = LayoutOptions.Center },
-                new Label { Text = "A basic .NET 10 app with UI, business, and database layers in one project.", HorizontalTextAlignment = TextAlignment.Center },
-                _connectionStatus,
-                MakeButton("Connect to Supabase", ConnectAsync),
-                MakeButton("Open details", async () => await Shell.Current.GoToAsync(nameof(DetailsPage)))
+                Padding = new Thickness(20),
+                Spacing = 16,
+                Children =
+                {
+                    UiStyle.Heading(UiStyle.Greeting()),
+                    UiStyle.Card(new VerticalStackLayout
+                    {
+                        Spacing = 10,
+                        Children =
+                        {
+                            new Label { Text = "MAUI + Supabase", FontSize = 20, FontAttributes = FontAttributes.Bold },
+                            UiStyle.Divider(),
+                            new Label { Text = "A basic .NET 10 app with UI, business, and database layers in one project.", FontSize = 14 },
+                            _connectionStatus
+                        }
+                    }),
+                    MakeButton("Connect to Supabase", ConnectAsync),
+                    MakeButton("Open details", async () => await Shell.Current.GoToAsync(nameof(DetailsPage)))
+                }
             }
         };
     }
