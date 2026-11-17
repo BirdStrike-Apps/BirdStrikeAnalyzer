@@ -7,7 +7,6 @@
 
     <Grid ColumnDefinitions="*,300" RowDefinitions="Auto,*">
         <Grid Grid.ColumnSpan="2" Padding="20,14" ColumnDefinitions="48,*,Auto" BackgroundColor="Transparent">
-            <Button Text="☰" FontSize="25" Padding="0" BackgroundColor="Transparent" TextColor="#101820" Shadow="{x:Null}" MinimumHeightRequest="44" Clicked="OnMenuClicked" />
             <Label Grid.Column="1" Text="Bird Strike Reports" HorizontalTextAlignment="Center" VerticalOptions="Center" FontAttributes="Bold" FontSize="22" />
             <Button x:Name="FilterButton" Grid.Column="2" Text="Filter" Clicked="OnFilterClicked" BackgroundColor="White" TextColor="#101820" CornerRadius="2" Padding="18,8" FontSize="16" MinimumHeightRequest="44" />
         </Grid>
