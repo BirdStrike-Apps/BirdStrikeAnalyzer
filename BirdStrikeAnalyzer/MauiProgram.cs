@@ -21,6 +21,11 @@ public static class MauiProgram
         builder.Services.AddTransient<MainPage>();
         builder.Services.AddTransient<AboutPage>();
 
+        // Analyzer starts with in-memory example data. Replace IAnalyzerDataSource
+        // registration with an adapter that calls BusinessLogic/IDatabase when ready.
+        builder.Services.AddSingleton<IAnalyzerDataSource, SampleAnalyzerDataSource>();
+        builder.Services.AddTransient<AnalyzerPage>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif

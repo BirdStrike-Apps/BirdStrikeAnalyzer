@@ -7,13 +7,10 @@ public sealed class AppShell : Shell
     public AppShell(IServiceProvider services)
     {
         Title = "ThreeTierMauiSample";
-
-        // Hamburger menu in the top bar instead of top tabs.
         FlyoutBehavior = FlyoutBehavior.Flyout;
         FlyoutBackgroundColor = Colors.White;
         Routing.RegisterRoute(nameof(DetailsPage), typeof(DetailsPage));
 
-        // Dark, readable menu entries regardless of light/dark theme.
         SetItemTemplate(this, new DataTemplate(() =>
         {
             var label = new Label
@@ -27,7 +24,6 @@ public sealed class AppShell : Shell
             return label;
         }));
 
-        // Top bar shows only the BirdStrike logo ("Bird" regular + "Strike" bold italic, white), left-aligned.
         SetTitleView(this, new Label
         {
             HorizontalOptions = LayoutOptions.Fill,
@@ -48,6 +44,7 @@ public sealed class AppShell : Shell
         Items.Add(MakeItem("Buildings", "buildings", () => new BuildingManagementPage()));
         Items.Add(MakeItem("Doors", "doors", () => new DoorManagementPage()));
         Items.Add(MakeItem("Bird Strikes", "birdstrikes", () => new BirdStrikesPage()));
+        Items.Add(MakeItem("Analyzer", "analyzer", () => services.GetRequiredService<AnalyzerPage>()));
         Items.Add(MakeItem("About", "about", () => services.GetRequiredService<AboutPage>()));
     }
 
