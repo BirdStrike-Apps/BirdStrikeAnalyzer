@@ -6,51 +6,53 @@
     Title="Bird Strikes">
 
     <Grid ColumnDefinitions="*,300" RowDefinitions="Auto,*">
-        <Grid Grid.ColumnSpan="2" Padding="20,14" ColumnDefinitions="48,*,Auto" BackgroundColor="Transparent">
+        <Grid Grid.ColumnSpan="2" Padding="20,14" ColumnDefinitions="48,*,Auto,Auto" ColumnSpacing="8" BackgroundColor="Transparent">
             <Label Grid.Column="1" Text="Bird Strike Reports" HorizontalTextAlignment="Center" VerticalOptions="Center" FontAttributes="Bold" FontSize="22" />
-            <Button x:Name="FilterButton" Grid.Column="2" Text="Filter" Clicked="OnFilterClicked" BackgroundColor="White" TextColor="#101820" CornerRadius="2" Padding="18,8" FontSize="16" MinimumHeightRequest="44" />
+            <Button x:Name="RefreshButton" Grid.Column="2" Text="Refresh" Clicked="OnRefreshClicked" IsVisible="False" BackgroundColor="White" TextColor="#101820" CornerRadius="2" Padding="12,8" FontSize="16" MinimumHeightRequest="44" />
+            <Button x:Name="FilterButton" Grid.Column="3" Text="Filter" Clicked="OnFilterClicked" IsVisible="False" BackgroundColor="White" TextColor="#101820" CornerRadius="2" Padding="18,8" FontSize="16" MinimumHeightRequest="44" />
         </Grid>
 
-        <Grid Grid.Row="1" Padding="20" RowDefinitions="Auto,*" RowSpacing="12">
-            <Border Style="{StaticResource Card}" Padding="12,9">
-                <Grid ColumnDefinitions="*,Auto">
-                    <Label Text="Reporter     |     Date     |     Time" FontAttributes="Bold" VerticalOptions="Center" />
-                    <Label Grid.Column="1" Text="•••" FontSize="18" VerticalOptions="Center" />
+        <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Card}" Margin="24" Padding="24" VerticalOptions="Center" HorizontalOptions="Center">
+            <VerticalStackLayout x:Name="SignInPanel" Spacing="12" WidthRequest="340">
+                <Label Text="Sign in to view reports" FontSize="22" FontAttributes="Bold" />
+                <Label Text="Use an authorized BirdStrikeDB account." TextColor="#64748B" />
+                <Entry x:Name="EmailInput" Placeholder="Email" Keyboard="Email" />
+                <Entry x:Name="PasswordInput" Placeholder="Password" IsPassword="True" />
+                <Button Text="Sign in" Clicked="OnSignInClicked" FontSize="16" Padding="12" />
+            </VerticalStackLayout>
+        </Border>
+
+        <Grid x:Name="ReportsPanel" Grid.Row="1" Grid.ColumnSpan="2" Padding="20" RowDefinitions="Auto,Auto,*" RowSpacing="12" IsVisible="False">
+            <Label Text="{Binding StatusMessage}" TextColor="#64748B" FontSize="13" />
+            <Border Grid.Row="1" Style="{StaticResource Card}" Padding="12,9">
+                <Grid ColumnDefinitions="*,130,130,110">
+                    <Label Text="Reporter ID" FontAttributes="Bold" VerticalOptions="Center" />
+                    <Label Grid.Column="1" Text="Date" FontAttributes="Bold" VerticalOptions="Center" />
+                    <Label Grid.Column="2" Text="Time" FontAttributes="Bold" VerticalOptions="Center" />
+                    <Label Grid.Column="3" Text="Notes" FontAttributes="Bold" VerticalOptions="Center" />
                 </Grid>
             </Border>
-            <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0">
+            <Border Grid.Row="2" Style="{StaticResource Card}" Padding="0">
                 <CollectionView ItemsSource="{Binding Reports}" SelectionMode="None" BackgroundColor="White">
                     <CollectionView.EmptyView>
                         <VerticalStackLayout Padding="24" Spacing="8" VerticalOptions="Center" HorizontalOptions="Center">
-                            <Label Text="No bird strike reports" FontSize="18" HorizontalTextAlignment="Center" />
-                            <Label Text="Reports will appear here when available." TextColor="#64748B" HorizontalTextAlignment="Center" />
+                            <Label Text="No bird strike reports found" FontSize="18" HorizontalTextAlignment="Center" />
+                            <Label Text="Reports from the database will appear here." TextColor="#64748B" HorizontalTextAlignment="Center" />
                         </VerticalStackLayout>
                     </CollectionView.EmptyView>
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Grid Padding="16,12" ColumnDefinitions="*,120,90" RowDefinitions="Auto" BackgroundColor="White">
-                                <Label Text="{Binding Reporter}" />
+                            <Grid Padding="16,12" ColumnDefinitions="*,130,130,110" RowDefinitions="Auto" BackgroundColor="White">
+                                <Label Text="{Binding ReporterId}" />
                                 <Label Grid.Column="1" Text="{Binding Date}" />
                                 <Label Grid.Column="2" Text="{Binding Time}" />
+                                <Label Grid.Column="3" Text="{Binding Notes}" />
                             </Grid>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
             </Border>
         </Grid>
-
-        <ScrollView Grid.Column="1" Grid.Row="1" IsVisible="{Binding IsSummaryVisible}">
-            <VerticalStackLayout Padding="0,20,20,20" Spacing="14">
-                <Label Text="Reports&#10;by Reporter&#10;&amp; Time" FontSize="24" />
-                <Border Style="{StaticResource Card}" HeightRequest="44" Padding="0" />
-                <Grid ColumnDefinitions="*,*" RowDefinitions="82,82" ColumnSpacing="12" RowSpacing="10">
-                    <Border Style="{StaticResource Card}" Padding="0" />
-                    <Border Grid.Column="1" Style="{StaticResource Card}" Padding="0" />
-                    <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0" />
-                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}" Padding="0" />
-                </Grid>
-            </VerticalStackLayout>
-        </ScrollView>
 
         <ScrollView x:Name="FilterPanel" Grid.Column="1" Grid.Row="1" IsVisible="False">
             <Border Style="{StaticResource Card}" Margin="0,20,20,20">
@@ -68,18 +70,10 @@
                         <Label Grid.Column="1" Text="to" VerticalOptions="Center" />
                         <TimePicker x:Name="EndTime" Grid.Column="2" />
                     </Grid>
-                    <Label Text="Reporter" />
-                    <Entry x:Name="ReporterFilter" Placeholder="Any reporter" />
-                    <Label Text="Location" />
-                    <Entry x:Name="LocationFilter" Placeholder="Any location" />
-                    <Label Text="Confirmed" />
-                    <Picker x:Name="ConfirmedFilter" Title="Any status">
-                        <Picker.Items>
-                            <x:String>Any status</x:String>
-                            <x:String>Confirmed</x:String>
-                            <x:String>Unconfirmed</x:String>
-                        </Picker.Items>
-                    </Picker>
+                    <Label Text="Reporter ID" />
+                    <Entry x:Name="ReporterFilter" Placeholder="Any reporter ID" />
+                    <Label Text="Notes" />
+                    <Entry x:Name="NotesFilter" Placeholder="Search notes" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,12,0,0">
                         <Button Text="Clear" Clicked="OnClearFiltersClicked" FontSize="16" Padding="8,12" />
                         <Button Grid.Column="1" Text="Apply" Clicked="OnApplyFiltersClicked" FontSize="16" Padding="8,12" />

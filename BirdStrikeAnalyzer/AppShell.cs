@@ -44,7 +44,7 @@ public sealed class AppShell : Shell
         Items.Add(MakeItem("Home", "home", () => services.GetRequiredService<MainPage>()));
         Items.Add(MakeItem("Buildings", "buildings", () => new BuildingManagementPage()));
         Items.Add(MakeItem("Doors", "doors", () => new DoorManagementPage()));
-        Items.Add(MakeItem("Bird Strikes", "birdstrikes", () => new BirdStrikesPage()));
+        Items.Add(MakeItem("Bird Strikes", "birdstrikes", () => services.GetRequiredService<BirdStrikesPage>()));
         Items.Add(MakeItem("Analyzer", "analyzer", () => services.GetRequiredService<AnalyzerPage>()));
     }
 
