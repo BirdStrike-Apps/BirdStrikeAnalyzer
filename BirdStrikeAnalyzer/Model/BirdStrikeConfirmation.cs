@@ -1,11 +1,20 @@
 using Supabase.Postgrest.Attributes;
-using Supabase.Postgrest.Models;
 
 namespace BirdStrikeAnalyzer.Model;
 
-/// <summary>Link from a confirmed bird-strike record to its original reporter submission.</summary>
+/// <summary>Row mapping for public.bird_strike_confirmations.</summary>
 [Table("bird_strike_confirmations")]
-public sealed class BirdStrikeConfirmation : BaseModel
+public sealed class BirdStrikeConfirmation : ObservableBaseModel
 {
-    [Column("submission_id")] public Guid SubmissionId { get; set; }
+    [PrimaryKey("submission_id")]
+    [Column("submission_id")]
+    public Guid SubmissionId { get; set; }
+
+    [Column("entry_date")] public DateTime EntryDate { get; set; }
+    [Column("entry_time")] public TimeSpan? EntryTime { get; set; }
+    [Column("syst_opp")] public string? SystematicOrOpportunistic { get; set; }
+    [Column("entry_confirmed")] public bool? EntryConfirmed { get; set; }
+    [Column("entry_confirmed_by")] public string? EntryConfirmedBy { get; set; }
+    [Column("confirmation_notes")] public string? ConfirmationNotes { get; set; }
+    [Column("species")] public string? Species { get; set; }
 }

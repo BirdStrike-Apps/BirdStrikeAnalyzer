@@ -111,58 +111,41 @@ public sealed class ReportsBarChartDrawable : IDrawable
 
     public void Draw(ICanvas canvas, RectF r)
     {
-        if (_months.Count == 0 || _series.Count == 0 || _series.All(series => series.Values.Length == 0))
+        const float left = 38, right = 12, top = 24, bottom = 30;
+        var plot = new RectF(r.Left + left, r.Top + top, Math.Max(1, r.Width - left - right), Math.Max(1, r.Height - top - bottom));
+        var rawMax = _series.SelectMany(series => series.Values).DefaultIfEmpty(0).Max();
+        var max = Math.Max(1, (int)Math.Ceiling(rawMax / 5d) * 5);
+        canvas.FontSize = 10;
+        for (var value = 0; value <= max; value += Math.Max(1, max / 4))
         {
-            canvas.FontSize = 13;
-            canvas.FontColor = Color.FromArgb("#64748B");
-            canvas.DrawString("No monthly chart data available.", r, HorizontalAlignment.Center, VerticalAlignment.Center);
-            return;
-        }
-
-        const float left = 36, right = 12, top = 30, bottom = 26;
-        var plot = new RectF(r.Left + left, r.Top + top, r.Width - left - right, r.Height - top - bottom);
-
-        var rawMax = _series.Max(s => s.Values.Max());
-        var step = rawMax <= 10 ? 2 : 5;
-        var max = (int)Math.Ceiling(rawMax / (double)step) * step;
-
-        // Grid + y labels
-        canvas.FontSize = 11;
-        for (var v = 0; v <= max; v += step)
-        {
-            var y = plot.Bottom - plot.Height * v / max;
+            var y = plot.Bottom - plot.Height * value / max;
             canvas.StrokeColor = Color.FromArgb("#E2E8F0");
             canvas.StrokeSize = 1;
             canvas.DrawLine(plot.Left, y, plot.Right, y);
             canvas.FontColor = Color.FromArgb("#64748B");
-            canvas.DrawString(v.ToString(), r.Left, y - 8, left - 6, 16, HorizontalAlignment.Right, VerticalAlignment.Center);
+            canvas.DrawString(value.ToString(), r.Left, y - 8, left - 6, 16, HorizontalAlignment.Right, VerticalAlignment.Center);
         }
-
-        // Bars
+        if (_months.Count == 0 || _series.Count == 0) return;
         var groupWidth = plot.Width / _months.Count;
-        var barWidth = Math.Min(24f, groupWidth * 0.75f / _series.Count);
-        for (var m = 0; m < _months.Count; m++)
+        var seriesCount = _series.Count;
+        var barWidth = Math.Min(24f, groupWidth * 0.72f / seriesCount);
+        for (var month = 0; month < _months.Count; month++)
         {
-            var groupLeft = plot.Left + m * groupWidth + (groupWidth - barWidth * _series.Count) / 2;
-            for (var s = 0; s < _series.Count; s++)
+            var groupLeft = plot.Left + month * groupWidth + (groupWidth - barWidth * seriesCount) / 2;
+            for (var series = 0; series < seriesCount; series++)
             {
-                var h = plot.Height * _series[s].Values[m] / max;
-                canvas.FillColor = Color.FromArgb(_series[s].Color);
-                canvas.FillRoundedRectangle(groupLeft + s * barWidth, plot.Bottom - h, barWidth - 2, h, 2);
+                var values = _series[series].Values;
+                var value = month < values.Length ? values[month] : 0;
+                var height = plot.Height * value / max;
+                canvas.FillColor = Color.FromArgb(_series[series].Color);
+                canvas.FillRoundedRectangle(groupLeft + series * barWidth, plot.Bottom - height, Math.Max(1, barWidth - 2), height, 2);
             }
             canvas.FontColor = Color.FromArgb("#475467");
-            canvas.DrawString(_months[m], plot.Left + m * groupWidth, plot.Bottom + 4, groupWidth, 18, HorizontalAlignment.Center, VerticalAlignment.Center);
+            canvas.DrawString(_months[month], plot.Left + month * groupWidth, plot.Bottom + 4, groupWidth, 18, HorizontalAlignment.Center, VerticalAlignment.Center);
         }
-
-        // Legend
-        var lx = plot.Left;
-        foreach (var s in _series)
-        {
-            canvas.FillColor = Color.FromArgb(s.Color);
-            canvas.FillRoundedRectangle(lx, r.Top + 8, 12, 12, 2);
-            canvas.FontColor = Color.FromArgb("#101820");
-            canvas.DrawString(s.Building, lx + 16, r.Top + 6, 70, 16, HorizontalAlignment.Left, VerticalAlignment.Center);
-            lx += 86;
-        }
+        canvas.FillColor = Color.FromArgb("#1682D4");
+        canvas.FillRoundedRectangle(plot.Left, r.Top + 7, 10, 10, 2);
+        canvas.FontColor = Color.FromArgb("#101820");
+        canvas.DrawString("Confirmed strikes", plot.Left + 14, r.Top + 4, 130, 16, HorizontalAlignment.Left, VerticalAlignment.Center);
     }
 }

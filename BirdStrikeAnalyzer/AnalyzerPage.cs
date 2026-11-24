@@ -275,10 +275,21 @@ public sealed class AnalyzerPage : ContentPage
 
     private async Task LoadAsync()
     {
+        if (!_businessLogic.IsAuthenticated)
+        {
+            _reports.Clear();
+            _pendingReports.Clear();
+            RenderTable();
+            RenderChart();
+            RenderTodoList();
+            _dataStatus.Text = "Sign in through Bird Strikes to load reports.";
+            return;
+        }
+
         _dataStatus.Text = "Loading Supabase reports…";
         try
         {
-            var reports = await _businessLogic.GetAnalyzerReportsAsync();
+            var reports = await _businessLogic.GetPendingReportsAsync();
             _reports.Clear();
             _reports.AddRange(reports);
             _pendingReports.Clear();
@@ -544,6 +555,37 @@ public sealed class AnalyzerPage : ContentPage
     private sealed record AnalyzerColumn(string Name, Func<AnalyzerReport, string> DisplayValue, Func<AnalyzerReport, string> SortValue);
 }
 
+/// <summary>Adapter boundary for connecting this page to the app's business/database layers.</summary>
+public interface IAnalyzerDataSource
+{
+    Task<IReadOnlyList<AnalyzerReport>> GetReportsAsync(CancellationToken cancellationToken = default);
+    Task ConfirmReportAsync(Guid reportId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>In-memory sample source so the page works before a Supabase adapter is added.</summary>
+public sealed class SampleAnalyzerDataSource : IAnalyzerDataSource
+{
+    private readonly List<AnalyzerReport> _reports = new()
+    {
+        new() { Id = Guid.Parse("a5ecfcbf-758a-4d60-a63f-cf8be36f0844"), Reporter = "James Anderson", Building = "Halsey Science Center", Door = "Door 2", ReportedAt = DateTimeOffset.Now.AddDays(-2).AddHours(-1), IsConfirmed = false },
+        new() { Id = Guid.Parse("1c5c3c0b-ae1b-4660-a4fe-ace837633879"), Reporter = "Bob Hawk", Building = "Reeve Memorial Union", Door = "Door 7", ReportedAt = DateTimeOffset.Now.AddDays(-5), IsConfirmed = false },
+        new() { Id = Guid.Parse("ab23b65d-fef2-4d13-8b9e-117773759842"), Reporter = "Howard Smith", Building = "Student Recreation and Wellness Center", Door = "Door 1", ReportedAt = DateTimeOffset.Now.AddDays(-12).AddHours(3), IsConfirmed = false },
+        new() { Id = Guid.Parse("8dc5bab7-e9d1-46b8-a522-e638db62c66a"), Reporter = "Jen Thomas", Building = "Swart Hall", Door = "Door 4", ReportedAt = DateTimeOffset.Now.AddDays(-20).AddHours(-4), IsConfirmed = true },
+        new() { Id = Guid.Parse("8ae55e61-8e06-477a-9a1f-e276144421a3"), Reporter = "Leonard Williams", Building = "Pollock Library", Door = "North Entrance", ReportedAt = DateTimeOffset.Now.AddDays(-35).AddHours(2), IsConfirmed = true }
+    };
+
+    public Task<IReadOnlyList<AnalyzerReport>> GetReportsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<AnalyzerReport>>(_reports.ToList());
+
+    public Task ConfirmReportAsync(Guid reportId, CancellationToken cancellationToken = default)
+    {
+        var report = _reports.SingleOrDefault(item => item.Id == reportId)
+            ?? throw new KeyNotFoundException("The birdstrike report could not be found.");
+        report.IsConfirmed = true;
+        return Task.CompletedTask;
+    }
+}
+
 /// <summary>UI-neutral report DTO mapped from the report model in the data source.</summary>
 public sealed class AnalyzerReport
 {
@@ -552,6 +594,8 @@ public sealed class AnalyzerReport
     public string Building { get; init; } = string.Empty;
     public string Door { get; init; } = string.Empty;
     public DateTimeOffset ReportedAt { get; init; }
+    public string ReportDateText { get; init; } = string.Empty;
+    public string ReportTimeText { get; init; } = string.Empty;
     public string Notes { get; init; } = string.Empty;
     public bool IsConfirmed { get; set; }
 }

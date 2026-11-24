@@ -12,6 +12,6 @@ public sealed class BuildingDoors : ObservableBaseModel
 
     [Column("building_name")] public string BuildingName { get; set; } = string.Empty;
     [Column("door")] public string Door { get; set; } = string.Empty;
-    [Column("latitude")] public double Latitude { get; set; }
-    [Column("longitude")] public double Longitude { get; set; }
+    [Column("latitude")] public double? Latitude { get; set; }
+    [Column("longitude")] public double? Longitude { get; set; }
 }

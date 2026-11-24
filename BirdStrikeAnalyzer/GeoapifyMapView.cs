@@ -55,15 +55,7 @@ public sealed class GeoapifyMapView : ContentView
             <!doctype html>
             <html><head><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
             <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-            <style>
-              html,body,#map{height:100%;width:100%;margin:0}
-              .leaflet-popup-content{font:14px sans-serif}
-              .hotspot-legend{background:rgba(255,255,255,.96);padding:9px 11px;border-radius:8px;
-                box-shadow:0 1px 6px rgba(0,0,0,.22);font:12px/1.5 sans-serif;color:#263238}
-              .hotspot-legend .scale{display:flex;align-items:center;gap:7px;margin-top:4px}
-              .hotspot-legend .gradient{width:105px;height:9px;border-radius:6px;
-                background:linear-gradient(90deg,#2b83ba,#abdda4,#fdae61,#d7191c)}
-            </style>
+            <style>html,body,#map{height:100%;width:100%;margin:0} .leaflet-popup-content{font:14px sans-serif}</style>
             </head><body><div id="map"></div>
             <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
             <script>
@@ -75,40 +67,24 @@ public sealed class GeoapifyMapView : ContentView
                 maxZoom: 20
               }).addTo(map);
               const bounds = [];
-              const maxCount = Math.max(1, ...markers.map(item => Number(item.Count) || 0));
+              const maxCount = Math.max(1, ...markers.map(item => item.Count));
               markers.forEach(item => {
-                const count = Math.max(0, Number(item.Count) || 0);
-                const intensity = Math.sqrt(count / maxCount);
-                const radius = 7 + intensity * 21;
-                const color = hotspotColor(intensity);
+                // Scale circle radius and color by all-time report volume.
+                const intensity = Math.sqrt(Math.max(0, item.Count) / maxCount);
+                const radius = 7 + intensity * 15;
+                const color = intensity >= 0.70 ? '#dc2626' : intensity >= 0.35 ? '#f59e0b' : '#16a34a';
                 const marker = L.circleMarker([item.Latitude, item.Longitude], {
                   radius,
                   color,
                   weight: 2,
                   opacity: 0.95,
                   fillColor: color,
-                  fillOpacity: count === 0 ? 0.18 : 0.55
+                  fillOpacity: 0.38
                 }).addTo(map);
-                marker.bindPopup(`<strong>${escapeHtml(item.Name)}</strong><br>${count} confirmed bird-strike report(s)`);
-                marker.bindTooltip(`${escapeHtml(item.Name)}: ${count}`, {direction:'top', offset:[0,-radius]});
+                marker.bindPopup(`<strong>${escapeHtml(item.Name)}</strong><br>${item.Count} all-time report(s)`);
                 bounds.push([item.Latitude, item.Longitude]);
               });
-              const legend = L.control({position:'bottomright'});
-              legend.onAdd = () => {
-                const div = L.DomUtil.create('div', 'hotspot-legend');
-                div.innerHTML = '<strong>Confirmed bird strikes</strong><div class="scale"><span>Fewer</span><span class="gradient"></span><span>More</span></div><div>Circle size also increases with count</div>';
-                return div;
-              };
-              legend.addTo(map);
-              if (bounds.length > 1) map.fitBounds(bounds, {padding:[32,32], maxZoom:17});
-              function hotspotColor(value) {
-                const stops = [[43,131,186],[171,221,164],[253,174,97],[215,25,28]];
-                const scaled = Math.max(0, Math.min(1, value)) * (stops.length - 1);
-                const index = Math.min(stops.length - 2, Math.floor(scaled));
-                const part = scaled - index;
-                const rgb = stops[index].map((channel, i) => Math.round(channel + (stops[index + 1][i] - channel) * part));
-                return `rgb(${rgb.join(',')})`;
-              }
+              if (bounds.length > 1) map.fitBounds(bounds, {padding:[24,24], maxZoom:17});
               function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
             </script></body></html>
             """;
