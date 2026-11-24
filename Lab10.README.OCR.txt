@@ -1,0 +1,23 @@
+Name: Owen Rogers
+
+Implemented Features: 
+    I generated the bird strikes report page
+to display the submissions in the supabase table.
+It displays the reporter ID, date and time
+of the submission, and additional notes. It
+also requires the analyst to log in to view
+submissions.
+
+How I Supervised the AI:
+    I provided the AI a zip folder of the project and
+a link to the supabase table with the submissions. 
+It achieved what was requested, it displayed all 
+submissions with reporter ID, date and time, 
+and notes. It requires an email that is labeled as
+an analyst.
+
+Problems:
+    When it first generated the code to connect to supabase,
+The table was empty. So I asked it to display the submissions
+in the supabase, and it finally showed up. I also needed to 
+set roles to emails as "analysts" to access the reports table.

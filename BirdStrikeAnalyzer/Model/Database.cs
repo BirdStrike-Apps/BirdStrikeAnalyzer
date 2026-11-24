@@ -15,12 +15,25 @@ public sealed class Database : IDatabase
         return response.Models;
     }
 
+    public async Task<IReadOnlyList<BirdStrikeSubmission>> GetBirdStrikeSubmissionsAsync(CancellationToken cancellationToken = default)
+    {
+        var client = await GetClientAsync(cancellationToken);
+        var response = await client.From<BirdStrikeSubmission>().Get(cancellationToken);
+        return response.Models;
+    }
+
+    public async Task SignInAsync(string email, string password, CancellationToken cancellationToken = default)
+    {
+        var client = await GetClientAsync(cancellationToken);
+        await client.Auth.SignIn(email, password);
+    }
+
     private async Task<Client> GetClientAsync(CancellationToken cancellationToken)
     {
         if (_client is not null) return _client;
         if (SupabaseSettings.ProjectUrl.Contains("YOUR_PROJECT_REF", StringComparison.Ordinal) ||
             SupabaseSettings.PublishableKey.Contains("YOUR_SUPABASE", StringComparison.Ordinal))
-            throw new InvalidOperationException("Set the Supabase project URL and publishable key in Model/SupabaseSettings.cs.");
+            throw new InvalidOperationException("Set the Supabase publishable key in Model/SupabaseSettings.cs.");
 
         await _initializationLock.WaitAsync(cancellationToken);
         try
