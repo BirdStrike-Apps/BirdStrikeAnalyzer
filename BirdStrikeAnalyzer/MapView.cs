@@ -48,7 +48,7 @@ public sealed class MapViewPage : ContentPage
             Content = mapPanelContent
         };
 
-        RenderHotspots(HomeDashboardData.Buildings);
+        RenderHotspots(Array.Empty<BuildingReportCount>());
 
         var detailsPanel = UiStyle.Card(new Grid
         {
@@ -132,13 +132,6 @@ public sealed class MapViewPage : ContentPage
 
     private async Task LoadHotspotsAsync()
     {
-        if (!_businessLogic.IsAuthenticated)
-        {
-            _status.Text = "Showing sample hotspots. Sign in through Bird Strikes to load Supabase data.";
-            RenderHotspots(HomeDashboardData.Buildings);
-            return;
-        }
-
         _status.Text = "Loading hotspots from Supabase…";
         try
         {
@@ -154,8 +147,8 @@ public sealed class MapViewPage : ContentPage
         }
         catch (Exception ex)
         {
-            RenderHotspots(HomeDashboardData.Buildings);
-            _status.Text = $"Supabase unavailable; showing sample hotspots. {ex.Message}";
+            RenderHotspots(Array.Empty<BuildingReportCount>());
+            _status.Text = $"Unable to load Supabase hotspots: {ex.Message}";
         }
     }
 

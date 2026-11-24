@@ -14,34 +14,23 @@ public sealed class MainPage : ContentPage
     private readonly GeoapifyMapView _homeMap;
     private readonly Label _connectionStatus = new()
     {
-        Text = "Supabase has not been contacted.",
+        Text = "Connecting to Supabase when the app opens…",
         TextColor = Muted,
         FontSize = 12,
         VerticalOptions = LayoutOptions.Center
     };
 
-    private readonly IAnalyzerDataSource _dataSource;
     private readonly List<AnalyzerReport> _pendingReports = new();
     private readonly VerticalStackLayout _todoList = new() { Spacing = 10 };
     private readonly Label _todoCount = new() { FontSize = 13, TextColor = Color.FromArgb("#64748B") };
 
-    public MainPage(BusinessLogic businessLogic, IAnalyzerDataSource dataSource)
+    private bool _isLoading;
+
+    public MainPage(BusinessLogic businessLogic)
     {
         _businessLogic = businessLogic;
-        _dataSource = dataSource;
         Title = "Home";
         BackgroundColor = PageBackground;
-
-        var connect = new Button
-        {
-            Text = "Connect to Supabase",
-            BackgroundColor = AccentBlue,
-            TextColor = Colors.White,
-            CornerRadius = 4,
-            Padding = new Thickness(14, 6),
-            MinimumHeightRequest = 36
-        };
-        connect.Clicked += async (_, _) => await ConnectAsync();
 
         var header = new Grid
         {
@@ -51,8 +40,7 @@ public sealed class MainPage : ContentPage
             BackgroundColor = PanelBlue
         };
         header.Add(new Label { Text = "Hello, Misty!", FontSize = 25, FontAttributes = FontAttributes.Bold, TextColor = Ink, VerticalOptions = LayoutOptions.Center });
-        var right = new HorizontalStackLayout { Spacing = 10, VerticalOptions = LayoutOptions.Center, Children = { _connectionStatus, connect } };
-        header.Add(right, 1);
+        header.Add(_connectionStatus, 1);
 
         _homeMap = new GeoapifyMapView
         {
@@ -64,7 +52,7 @@ public sealed class MainPage : ContentPage
         _homeMap.GestureRecognizers.Add(mapTap);
         var chart = new GraphicsView
         {
-            Drawable = new ReportsBarChartDrawable(HomeDashboardData.Months, HomeDashboardData.Series),
+            Drawable = new ReportsBarChartDrawable(Array.Empty<string>(), Array.Empty<MonthlySeries>()),
             HeightRequest = 190,
             BackgroundColor = Colors.White
         };
@@ -81,19 +69,14 @@ public sealed class MainPage : ContentPage
         leftColumn.Add(chartPanel, 0, 1);
 
         var reporters = new VerticalStackLayout { Spacing = 10 };
-        foreach (var r in HomeDashboardData.Reporters)
-            reporters.Add(Card(new Label { Text = r.Name, FontAttributes = FontAttributes.Bold, TextColor = Ink },
-                               new Label { Text = $"Buildings: {r.Buildings}", TextColor = Ink }));
+        reporters.Add(new Label { Text = "Reporter summaries will appear when connected data is available.", TextColor = Muted, FontSize = 13 });
 
-        var birds = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) }, RowSpacing = 4, Padding = new Thickness(12, 8), BackgroundColor = Colors.White };
-        var row = 0;
-        foreach (var (building, count) in HomeDashboardData.BirdsPerMonth)
+        var birds = new Label
         {
-            birds.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            birds.Add(new Label { Text = building, TextColor = Ink }, 0, row);
-            birds.Add(new Label { Text = count.ToString(), FontAttributes = FontAttributes.Bold, TextColor = Ink }, 1, row);
-            row++;
-        }
+            Text = "Live building totals are shown on the map.",
+            TextColor = Ink,
+            Padding = new Thickness(12, 8)
+        };
 
         var middleColumn = new VerticalStackLayout
         {
@@ -101,7 +84,7 @@ public sealed class MainPage : ContentPage
             Children =
             {
                 Panel(Heading("Reporters"), reporters),
-                Panel(Heading("Birds per month"), birds)
+                Panel(Heading("Confirmed strikes"), birds)
             }
         };
 
@@ -123,7 +106,6 @@ public sealed class MainPage : ContentPage
         todoContent.Add(_todoCount, 0, 2);
         todoContent.Add(todoScroll, 0, 3);
         var todoColumn = UiStyle.Card(todoContent);
-        Loaded += async (_, _) => await LoadTodoAsync();
 
         // Wide layout like the mockup: map + reporters side by side, To-Do on the right.
         var body = new Grid
@@ -169,39 +151,36 @@ public sealed class MainPage : ContentPage
         Content = new VerticalStackLayout { Spacing = 10, Children = { heading, content } }
     };
 
-    private async Task LoadTodoAsync()
-    {
-        try
-        {
-            var reports = await _dataSource.GetReportsAsync();
-            _pendingReports.Clear();
-            _pendingReports.AddRange(reports.Where(report => !report.IsConfirmed));
-            RenderTodoList();
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlertAsync("Unable to load reports", ex.Message, "OK");
-        }
-    }
-
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (!_businessLogic.IsAuthenticated)
-        {
-            _homeMap.Show(HomeDashboardData.Buildings);
-            return;
-        }
-
+        if (_isLoading) return;
+        _isLoading = true;
+        _connectionStatus.Text = "Connecting to Supabase…";
         try
         {
-            var buildings = await _businessLogic.GetBuildingHotspotsAsync();
-            _homeMap.Show(buildings);
+            await _businessLogic.InitializeAsync();
+            var hotspotsTask = _businessLogic.GetBuildingHotspotsAsync();
+            var reportsTask = _businessLogic.GetAnalyzerReportsAsync();
+            await Task.WhenAll(hotspotsTask, reportsTask);
+
+            var hotspots = await hotspotsTask;
+            _homeMap.Show(hotspots);
+            _pendingReports.Clear();
+            _pendingReports.AddRange((await reportsTask).Where(report => !report.IsConfirmed));
+            RenderTodoList();
+            _connectionStatus.Text = $"Connected to Supabase · {hotspots.Count} buildings · {_pendingReports.Count} reports to review";
         }
-        catch
+        catch (Exception ex)
         {
-            // Keep the existing sample map available when Supabase is unavailable.
-            _homeMap.Show(HomeDashboardData.Buildings);
+            _homeMap.Show(Array.Empty<BuildingReportCount>());
+            _pendingReports.Clear();
+            RenderTodoList();
+            _connectionStatus.Text = $"Supabase connection failed: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 
@@ -244,7 +223,7 @@ public sealed class MainPage : ContentPage
     {
         try
         {
-            await _dataSource.ConfirmReportAsync(report.Id);
+            await _businessLogic.ConfirmReportAsync(report.Id);
             report.IsConfirmed = true;
             _pendingReports.Remove(report);
             RenderTodoList();
@@ -255,18 +234,4 @@ public sealed class MainPage : ContentPage
         }
     }
 
-    private async Task ConnectAsync()
-    {
-        _connectionStatus.Text = "Connecting…";
-        try
-        {
-            var rows = await _businessLogic.GetSampleItemsAsync();
-            _connectionStatus.Text = $"Connected. Read {rows.Count} sample row(s).";
-        }
-        catch (Exception ex)
-        {
-            _connectionStatus.Text = ex.Message;
-        }
-    }
 }
-

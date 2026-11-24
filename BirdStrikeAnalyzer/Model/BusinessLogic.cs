@@ -6,8 +6,7 @@ namespace BirdStrikeAnalyzer.Model;
 public sealed class BusinessLogic(IDatabase database)
 {
     public bool IsAuthenticated => database.IsAuthenticated;
-    public Task<IReadOnlyList<SampleItem>> GetSampleItemsAsync(CancellationToken cancellationToken = default) =>
-        database.GetSampleItemsAsync(cancellationToken);
+    public Task InitializeAsync(CancellationToken cancellationToken = default) => database.InitializeAsync(cancellationToken);
 
     public Task SignInAsync(string email, string password, CancellationToken cancellationToken = default) =>
         database.SignInAsync(email, password, cancellationToken);
@@ -57,18 +56,27 @@ public sealed class BusinessLogic(IDatabase database)
 
     public async Task<IReadOnlyList<BuildingReportCount>> GetBuildingHotspotsAsync(CancellationToken cancellationToken = default)
     {
+        // A hotspot is one confirmation row, linked to its original submission and then
+        // to the building door selected by the reporter.
         var submissions = await database.GetBirdStrikeSubmissionsAsync(cancellationToken);
+        var confirmations = await database.GetBirdStrikeConfirmationsAsync(cancellationToken);
         var doors = await database.GetBuildingDoorsAsync(cancellationToken);
-        var counts = submissions.GroupBy(item => item.BuildingDoorId)
+
+        var submissionDoor = submissions.ToDictionary(item => item.SubmissionId, item => item.BuildingDoorId);
+        var confirmationCountsByDoor = confirmations
+            .Where(item => submissionDoor.ContainsKey(item.SubmissionId))
+            .GroupBy(item => submissionDoor[item.SubmissionId])
             .ToDictionary(group => group.Key, group => group.Count());
-        var located = doors.Where(door => door.Latitude is >= -90 and <= 90 && door.Longitude is >= -180 and <= 180)
+
+        var located = doors
+            .Where(door => door.Latitude is >= -90 and <= 90 && door.Longitude is >= -180 and <= 180)
             .GroupBy(door => door.BuildingName)
             .Select(group => new
             {
                 Name = group.Key,
                 Latitude = group.Average(door => door.Latitude),
                 Longitude = group.Average(door => door.Longitude),
-                Count = group.Sum(door => counts.GetValueOrDefault(door.BuildingDoorId))
+                Count = group.Sum(door => confirmationCountsByDoor.GetValueOrDefault(door.BuildingDoorId))
             }).ToList();
 
         if (located.Count == 0) return Array.Empty<BuildingReportCount>();
@@ -81,7 +89,9 @@ public sealed class BusinessLogic(IDatabase database)
             item.Name,
             Normalize(item.Longitude, minLon, maxLon, inset),
             1f - Normalize(item.Latitude, minLat, maxLat, inset),
-            item.Count)).ToList();
+            item.Count,
+            item.Latitude,
+            item.Longitude)).ToList();
     }
 
     private static float Normalize(double value, double min, double max, float inset) =>

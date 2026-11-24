@@ -111,6 +111,14 @@ public sealed class ReportsBarChartDrawable : IDrawable
 
     public void Draw(ICanvas canvas, RectF r)
     {
+        if (_months.Count == 0 || _series.Count == 0 || _series.All(series => series.Values.Length == 0))
+        {
+            canvas.FontSize = 13;
+            canvas.FontColor = Color.FromArgb("#64748B");
+            canvas.DrawString("No monthly chart data available.", r, HorizontalAlignment.Center, VerticalAlignment.Center);
+            return;
+        }
+
         const float left = 36, right = 12, top = 30, bottom = 26;
         var plot = new RectF(r.Left + left, r.Top + top, r.Width - left - right, r.Height - top - bottom);
 

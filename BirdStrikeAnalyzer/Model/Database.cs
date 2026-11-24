@@ -10,12 +10,8 @@ public sealed class Database : IDatabase
 
     public bool IsAuthenticated => _client?.Auth.CurrentSession is not null;
 
-    public async Task<IReadOnlyList<SampleItem>> GetSampleItemsAsync(CancellationToken cancellationToken = default)
-    {
-        var client = await GetClientAsync(cancellationToken);
-        var response = await client.From<SampleItem>().Get(cancellationToken);
-        return response.Models;
-    }
+    public Task InitializeAsync(CancellationToken cancellationToken = default) =>
+        GetClientAsync(cancellationToken);
 
     public async Task<IReadOnlyList<BirdStrikeSubmission>> GetBirdStrikeSubmissionsAsync(CancellationToken cancellationToken = default)
     {
@@ -28,6 +24,13 @@ public sealed class Database : IDatabase
     {
         var client = await GetClientAsync(cancellationToken);
         var response = await client.From<BuildingDoors>().Get(cancellationToken);
+        return response.Models;
+    }
+
+    public async Task<IReadOnlyList<BirdStrikeConfirmation>> GetBirdStrikeConfirmationsAsync(CancellationToken cancellationToken = default)
+    {
+        var client = await GetClientAsync(cancellationToken);
+        var response = await client.From<BirdStrikeConfirmation>().Get(cancellationToken);
         return response.Models;
     }
 
