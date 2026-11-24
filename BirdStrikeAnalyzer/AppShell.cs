@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using BirdStrikeAnalyzer.Model;
 
 namespace BirdStrikeAnalyzer;
 
@@ -44,9 +45,10 @@ public sealed class AppShell : Shell
         Items.Add(MakeItem("Map View", "mapview", () => services.GetRequiredService<MapViewPage>()));
         Items.Add(MakeItem("Bird Strikes", "birdstrikes", () => services.GetRequiredService<BirdStrikesPage>()));
         Items.Add(MakeItem("Analyzer", "analyzer", () => services.GetRequiredService<AnalyzerPage>()));
-        Items.Add(MakeItem("Buildings", "buildings", () => new BuildingManagementPage()));
-        Items.Add(MakeItem("Doors", "doors", () => new DoorManagementPage()));
-        
+        Items.Add(MakeItem("Buildings", "buildings", () => new BuildingManagementPage(services.GetRequiredService<BusinessLogic>())));
+        Items.Add(MakeItem("Doors", "doors",
+            () => new DoorManagementPage(
+                services.GetRequiredService<BusinessLogic>())));
     }
 
     private static FlyoutItem MakeItem(string title, string route, Func<Page> createPage)

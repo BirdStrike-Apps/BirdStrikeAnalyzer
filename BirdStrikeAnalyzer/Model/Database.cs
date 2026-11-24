@@ -24,6 +24,32 @@ public sealed class Database : IDatabase
         return response.Models;
     }
 
+
+    // Insert a new building and door into Supabase.
+    public async Task AddBuildingDoorAsync(
+        BuildingDoors buildingDoor,
+        CancellationToken cancellationToken = default)
+    {
+        var client = await GetClientAsync(cancellationToken);
+
+        await client.From<BuildingDoors>()
+            .Insert(buildingDoor, cancellationToken: cancellationToken);
+    }
+// Update an existing door in Supabase.
+public async Task UpdateBuildingDoorAsync(
+    BuildingDoors buildingDoor,
+    CancellationToken cancellationToken = default)
+{
+    var client = await GetClientAsync(cancellationToken);
+
+    await client.From<BuildingDoors>()
+        .Where(door => door.BuildingDoorId == buildingDoor.BuildingDoorId)
+        .Set(door => door.Door, buildingDoor.Door)
+        .Set(door => door.Latitude, buildingDoor.Latitude)
+        .Set(door => door.Longitude, buildingDoor.Longitude)
+        .Update(cancellationToken: cancellationToken);
+}
+
     public async Task<IReadOnlyList<BirdStrikeConfirmation>> GetBirdStrikeConfirmationsAsync(CancellationToken cancellationToken = default)
     {
         var client = await GetClientAsync(cancellationToken);

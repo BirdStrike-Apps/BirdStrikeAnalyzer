@@ -1,0 +1,22 @@
+Name: Ayoub Elhanssali
+
+Implemented Features:
+
+For this lab, I used OpenAI's ChatGPT to implement database functionality for the Building Management and Door Management pages.
+The client can view existing buildings, add new buildings, add doors to existing buildings, and view the doors associated with each building.
+I also implemented the ability to edit door numbers, latitude, and longitude. All these features are connected to Supabase. 
+I maintained the three-tier architecture and added input validation to prevent duplicate buildings, duplicate doors, and invalid coordinates.
+
+How I Supervised AI:
+
+Instead of asking ChatGPT to implement everything at once, I worked on one feature at a time. 
+I provided ChatGPT with my existing code and asked it to explain what needed to be added or modified. 
+After implementing each feature, I ran the application and checked Supabase to verify that the database operations worked correctly. 
+If I encountered an error, I shared it with ChatGPT and worked with it to find a solution before moving to the next feature.
+
+Problems:
+
+One problem I encountered was a merge conflict in Database.cs when merging my teammates' changes from main into my branch. 
+I used ChatGPT to review the conflict and preserve both my code and my teammates' code. 
+I also encountered compilation errors related to coordinate types and a missing method in the BusinessLogic class. 
+I fixed these errors and continued testing the application. 
