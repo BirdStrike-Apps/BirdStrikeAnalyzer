@@ -1,0 +1,23 @@
+
+Name: Moss Saecker
+Implemented Features:
+    I implemented the map through Geoapify. I added a circle system that shows 
+how many confirmed bird strikes through color and size of the circle. I also 
+made it so Supabase automatically connects to the app without needing a button.
+Also, I removed the sample item in the models from the first lab. After those 
+changes, I made sure the rest of the elements on the home page (reporters, 
+reports per month, To Do list, and the past 30 days table) were correctly
+grabbing from Supabase and removed any visual errors such as words overlapping
+
+
+How I Supervised AI:
+    I often this time had to correct what I meant and the general spacing of
+the changes I prompted. I also had to share the SQL from Supabase to ensure
+the correct tables were being referenced and explain how the schema was meant
+to function. 
+
+Problems:
+    I found that asking for multiple changes at once would "confuse" ChatGPT,
+and I would end up with all changes only partially complete. I had to simplify
+my prompts in order to change, for example, the To Do list to actually pull
+from the correct tables and have the unconfirmed submissions show up.
