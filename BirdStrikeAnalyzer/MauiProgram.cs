@@ -22,10 +22,13 @@ public static class MauiProgram
         builder.Services.AddTransient<MapViewPage>();
         builder.Services.AddTransient<BirdStrikesPage>();
 
-        // Analyzer starts with in-memory example data. Replace IAnalyzerDataSource
-        // registration with an adapter that calls BusinessLogic/IDatabase when ready.
-        builder.Services.AddSingleton<IAnalyzerDataSource, SampleAnalyzerDataSource>();
         builder.Services.AddTransient<AnalyzerPage>();
+
+        Preferences.Set(
+            GeoapifyMapView.ApiKeyPreference,
+            "20e9**f211"
+        );
+        
 
 #if DEBUG
         builder.Logging.AddDebug();

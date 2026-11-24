@@ -95,8 +95,8 @@ public partial class BirdStrikesPage : ContentPage
                 Reports.Add(new BirdStrikeReport
                 {
                     ReporterId = item.ReporterId,
-                    ReportDate = item.ReportDate,
-                    ReportTime = item.ReportTime,
+                    ReportDate = item.ReportDate ?? DateTime.MinValue,
+                    ReportTime = item.ReportTime ?? TimeSpan.Zero,
                     Notes = item.ReporterNotes ?? string.Empty
                 });
             }
