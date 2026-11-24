@@ -10,7 +10,6 @@ public sealed class AppShell : Shell
         FlyoutBehavior = FlyoutBehavior.Flyout;
         FlyoutBackgroundColor = Colors.White;
         Routing.RegisterRoute(nameof(DetailsPage), typeof(DetailsPage));
-        Routing.RegisterRoute(nameof(MapViewPage), typeof(MapViewPage));
 
         SetItemTemplate(this, new DataTemplate(() =>
         {
@@ -42,10 +41,12 @@ public sealed class AppShell : Shell
         });
 
         Items.Add(MakeItem("Home", "home", () => services.GetRequiredService<MainPage>()));
-        Items.Add(MakeItem("Buildings", "buildings", () => new BuildingManagementPage()));
-        Items.Add(MakeItem("Doors", "doors", () => new DoorManagementPage()));
+        Items.Add(MakeItem("Map View", "mapview", () => services.GetRequiredService<MapViewPage>()));
         Items.Add(MakeItem("Bird Strikes", "birdstrikes", () => services.GetRequiredService<BirdStrikesPage>()));
         Items.Add(MakeItem("Analyzer", "analyzer", () => services.GetRequiredService<AnalyzerPage>()));
+        Items.Add(MakeItem("Buildings", "buildings", () => new BuildingManagementPage()));
+        Items.Add(MakeItem("Doors", "doors", () => new DoorManagementPage()));
+        
     }
 
     private static FlyoutItem MakeItem(string title, string route, Func<Page> createPage)

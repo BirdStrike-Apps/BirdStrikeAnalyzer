@@ -1,14 +1,14 @@
 using Microsoft.Maui.Graphics;
+using BirdStrikeAnalyzer.Model;
 
 namespace BirdStrikeAnalyzer;
 
 /// <summary>
-/// Desktop analyzer dashboard. Report loading and confirmation go through an interface,
-/// allowing the in-memory sample source to be replaced by the business/database layers.
+/// Desktop analyzer dashboard. Report data and confirmation are handled by the business layer.
 /// </summary>
 public sealed class AnalyzerPage : ContentPage
 {
-    private readonly IAnalyzerDataSource _dataSource;
+    private readonly BusinessLogic _businessLogic;
     private readonly List<AnalyzerReport> _reports = new();
     private readonly List<AnalyzerReport> _pendingReports = new();
     private readonly Picker _chartTypePicker = new() { Title = "Chart type", WidthRequest = 150 };
@@ -18,6 +18,7 @@ public sealed class AnalyzerPage : ContentPage
     private readonly Grid _tableGrid = new() { ColumnSpacing = 0, RowSpacing = 0 };
     private readonly VerticalStackLayout _todoList = new() { Spacing = 10 };
     private readonly Label _todoCount = new() { FontSize = 13, TextColor = Color.FromArgb("#64748B") };
+    private readonly Label _dataStatus = new() { FontSize = 12, TextColor = Color.FromArgb("#64748B") };
 
     private static readonly IReadOnlyList<AnalyzerColumn> AvailableColumns = new List<AnalyzerColumn>
     {
@@ -26,6 +27,7 @@ public sealed class AnalyzerPage : ContentPage
         new("Door", report => report.Door, report => report.Door),
         new("Date", report => report.ReportedAt.ToLocalTime().ToString("yyyy-MM-dd"), report => report.ReportedAt.ToLocalTime().ToString("yyyyMMdd")),
         new("Time", report => report.ReportedAt.ToLocalTime().ToString("h:mm tt"), report => report.ReportedAt.ToLocalTime().ToString("HHmm")),
+        new("Notes", report => report.Notes, report => report.Notes),
         new("Status", report => report.IsConfirmed ? "Confirmed" : "Needs review", report => report.IsConfirmed ? "1" : "0")
     };
 
@@ -33,9 +35,9 @@ public sealed class AnalyzerPage : ContentPage
     private ColumnSelection? _sortColumn;
     private bool _sortAscending = true;
 
-    public AnalyzerPage(IAnalyzerDataSource dataSource)
+    public AnalyzerPage(BusinessLogic businessLogic)
     {
-        _dataSource = dataSource;
+        _businessLogic = businessLogic;
         Title = "Analyzer";
         BackgroundColor = Color.FromArgb("#F3F7FB");
 
@@ -65,7 +67,12 @@ public sealed class AnalyzerPage : ContentPage
         });
 
         Content = BuildDesktopLayout();
-        Loaded += async (_, _) => await LoadAsync();
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await LoadAsync();
     }
 
     private View BuildDesktopLayout()
@@ -99,16 +106,30 @@ public sealed class AnalyzerPage : ContentPage
                 new Label { Text = "Birdstrike reports and trends", FontSize = 14, TextColor = Color.FromArgb("#475467") }
             }
         });
-        var exportButton = new Button
+        var refreshButton = new Button
         {
-            Text = "Export",
+            Text = "Refresh",
             FontSize = 14,
             Padding = new Thickness(18, 8),
             VerticalOptions = LayoutOptions.Center
         };
-        exportButton.Clicked += async (_, _) => await DisplayAlertAsync("Export", "Export can be connected to the report data source later.", "OK");
-        Grid.SetColumn(exportButton, 1);
-        header.Children.Add(exportButton);
+        refreshButton.Clicked += async (_, _) => await LoadAsync();
+        var signInButton = new Button
+        {
+            Text = "Sign in",
+            FontSize = 14,
+            Padding = new Thickness(18, 8),
+            VerticalOptions = LayoutOptions.Center
+        };
+        signInButton.Clicked += async (_, _) => await Shell.Current.GoToAsync("//birdstrikes");
+        var headerActions = new HorizontalStackLayout
+        {
+            Spacing = 8,
+            VerticalOptions = LayoutOptions.Center,
+            Children = { _dataStatus, signInButton, refreshButton }
+        };
+        Grid.SetColumn(headerActions, 1);
+        header.Children.Add(headerActions);
         root.Children.Add(header);
 
         var content = new Grid
@@ -254,9 +275,21 @@ public sealed class AnalyzerPage : ContentPage
 
     private async Task LoadAsync()
     {
+        if (!_businessLogic.IsAuthenticated)
+        {
+            _reports.Clear();
+            _pendingReports.Clear();
+            RenderTable();
+            RenderChart();
+            RenderTodoList();
+            _dataStatus.Text = "Sign in through Bird Strikes to load reports.";
+            return;
+        }
+
+        _dataStatus.Text = "Loading Supabase reports…";
         try
         {
-            var reports = await _dataSource.GetReportsAsync();
+            var reports = await _businessLogic.GetAnalyzerReportsAsync();
             _reports.Clear();
             _reports.AddRange(reports);
             _pendingReports.Clear();
@@ -264,9 +297,16 @@ public sealed class AnalyzerPage : ContentPage
             RenderTable();
             RenderChart();
             RenderTodoList();
+            _dataStatus.Text = $"{_reports.Count} report(s) loaded from Supabase";
         }
         catch (Exception ex)
         {
+            _reports.Clear();
+            _pendingReports.Clear();
+            RenderTable();
+            RenderChart();
+            RenderTodoList();
+            _dataStatus.Text = "Supabase reports could not be loaded.";
             await DisplayAlertAsync("Unable to load reports", ex.Message, "OK");
         }
     }
@@ -494,7 +534,7 @@ public sealed class AnalyzerPage : ContentPage
     {
         try
         {
-            await _dataSource.ConfirmReportAsync(report.Id);
+            await _businessLogic.ConfirmReportAsync(report.Id);
             report.IsConfirmed = true;
             _pendingReports.Remove(report);
             RenderTable();
@@ -554,6 +594,7 @@ public sealed class AnalyzerReport
     public string Building { get; init; } = string.Empty;
     public string Door { get; init; } = string.Empty;
     public DateTimeOffset ReportedAt { get; init; }
+    public string Notes { get; init; } = string.Empty;
     public bool IsConfirmed { get; set; }
 }
 

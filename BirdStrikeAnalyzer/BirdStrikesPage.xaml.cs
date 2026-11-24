@@ -114,7 +114,7 @@ public partial class BirdStrikesPage : ContentPage
 
 public sealed class BirdStrikeReport
 {
-    public Guid ReporterId { get; init; }
+    public Guid? ReporterId { get; init; }
     public DateTime ReportDate { get; init; }
     public TimeSpan ReportTime { get; init; }
     public string Notes { get; init; } = string.Empty;
