@@ -11,130 +11,71 @@ public sealed class MainPage : ContentPage
     private static readonly Color Muted = Color.FromArgb("#64748B");
 
     private readonly BusinessLogic _businessLogic;
-    private readonly GraphicsView _homeMap;
-    private readonly Label _connectionStatus = new()
-    {
-        Text = "Supabase has not been contacted.",
-        TextColor = Muted,
-        FontSize = 12,
-        VerticalOptions = LayoutOptions.Center
-    };
-
-    private readonly IAnalyzerDataSource _dataSource;
-    private readonly List<AnalyzerReport> _pendingReports = new();
+    private readonly GeoapifyMapView _homeMap;
+    private readonly Label _connectionStatus = new() { Text = "Connecting to Supabase…", TextColor = Muted, FontSize = 12, VerticalOptions = LayoutOptions.Center };
     private readonly VerticalStackLayout _todoList = new() { Spacing = 10 };
-    private readonly Label _todoCount = new() { FontSize = 13, TextColor = Color.FromArgb("#64748B") };
+    private readonly Label _todoCount = new() { FontSize = 13, TextColor = Muted };
+    private readonly VerticalStackLayout _reportersTable = new() { Spacing = 0 };
+    private readonly VerticalStackLayout _buildingsTable = new() { Spacing = 0 };
+    private readonly GraphicsView _monthlyChart;
+    private bool _loading;
 
-    public MainPage(BusinessLogic businessLogic, IAnalyzerDataSource dataSource)
+    public MainPage(BusinessLogic businessLogic)
     {
         _businessLogic = businessLogic;
-        _dataSource = dataSource;
         Title = "Home";
         BackgroundColor = PageBackground;
 
-        var connect = new Button
-        {
-            Text = "Connect to Supabase",
-            BackgroundColor = AccentBlue,
-            TextColor = Colors.White,
-            CornerRadius = 4,
-            Padding = new Thickness(14, 6),
-            MinimumHeightRequest = 36
-        };
-        connect.Clicked += async (_, _) => await ConnectAsync();
+        var connect = new Button { Text = "Refresh data", BackgroundColor = AccentBlue, TextColor = Colors.White, CornerRadius = 4, Padding = new Thickness(14, 6), MinimumHeightRequest = 36 };
+        connect.Clicked += async (_, _) => await LoadDashboardAsync();
+        var header = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) }, ColumnSpacing = 12, Padding = new Thickness(20, 14), BackgroundColor = PanelBlue };
+        header.Add(new Label { Text = "BirdStrike Analyzer", FontSize = 25, FontAttributes = FontAttributes.Bold, TextColor = Ink, VerticalOptions = LayoutOptions.Center });
+        header.Add(new HorizontalStackLayout { Spacing = 10, VerticalOptions = LayoutOptions.Center, Children = { _connectionStatus, connect } }, 1);
 
-        var header = new Grid
-        {
-            ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) },
-            ColumnSpacing = 12,
-            Padding = new Thickness(20, 14),
-            BackgroundColor = PanelBlue
-        };
-        header.Add(new Label { Text = "Hello, Misty!", FontSize = 25, FontAttributes = FontAttributes.Bold, TextColor = Ink, VerticalOptions = LayoutOptions.Center });
-        var right = new HorizontalStackLayout { Spacing = 10, VerticalOptions = LayoutOptions.Center, Children = { _connectionStatus, connect } };
-        header.Add(right, 1);
-
-        _homeMap = new GraphicsView
-        {
-            Drawable = new CampusMapDrawable(HomeDashboardData.Buildings),
-            MinimumHeightRequest = 300,
-            BackgroundColor = Colors.White
-        };
+        _homeMap = new GeoapifyMapView { MinimumHeightRequest = 300, BackgroundColor = Colors.White };
         var mapTap = new TapGestureRecognizer();
         mapTap.Tapped += async (_, _) => await Shell.Current.GoToAsync("//mapview");
         _homeMap.GestureRecognizers.Add(mapTap);
-        var chart = new GraphicsView
+
+        _monthlyChart = new GraphicsView { Drawable = new ReportsBarChartDrawable(Array.Empty<string>(), Array.Empty<MonthlySeries>()), HeightRequest = 210, BackgroundColor = Colors.White };
+        var leftColumn = new Grid { RowDefinitions = { new RowDefinition(GridLength.Star), new RowDefinition(GridLength.Auto) }, RowSpacing = 16 };
+        leftColumn.Add(Panel(Heading("Confirmed strikes by building"), _homeMap));
+        leftColumn.Add(Panel(Heading("Confirmed strikes per month"), _monthlyChart), 0, 1);
+
+        // Give the reporter directory more room while keeping its rows inside
+        // the card independently scrollable.
+        var reportersList = new ScrollView
         {
-            Drawable = new ReportsBarChartDrawable(HomeDashboardData.Months, HomeDashboardData.Series),
-            HeightRequest = 190,
-            BackgroundColor = Colors.White
+            Content = _reportersTable,
+            VerticalOptions = LayoutOptions.Fill,
+            HeightRequest = 400
         };
-
-        var mapPanel = Panel(Heading("Bird reports by building"), _homeMap);
-        var chartPanel = Panel(Heading("Reports per month"), chart);
-
-        var leftColumn = new Grid
+        var reporterPanel = Panel(Heading("Reporters"), reportersList);
+        reporterPanel.HeightRequest = 460;
+        reporterPanel.VerticalOptions = LayoutOptions.Start;
+        // Keep this dashboard card bounded so a large building list does not
+        // increase the page height; only the rows inside the card scroll.
+        var confirmedList = new ScrollView
         {
-            RowDefinitions = { new RowDefinition(GridLength.Star), new RowDefinition(GridLength.Auto) },
-            RowSpacing = 16
+            Content = _buildingsTable,
+            VerticalOptions = LayoutOptions.Fill,
+            HeightRequest = 220
         };
-        leftColumn.Add(mapPanel);
-        leftColumn.Add(chartPanel, 0, 1);
+        var confirmedPanel = Panel(Heading("Confirmed Strikes — past 30 days"), confirmedList);
+        confirmedPanel.HeightRequest = 280;
+        confirmedPanel.VerticalOptions = LayoutOptions.Start;
+        var middleColumn = new VerticalStackLayout { Spacing = 16, Children = { reporterPanel, confirmedPanel } };
 
-        var reporters = new VerticalStackLayout { Spacing = 10 };
-        foreach (var r in HomeDashboardData.Reporters)
-            reporters.Add(Card(new Label { Text = r.Name, FontAttributes = FontAttributes.Bold, TextColor = Ink },
-                               new Label { Text = $"Buildings: {r.Buildings}", TextColor = Ink }));
-
-        var birds = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) }, RowSpacing = 4, Padding = new Thickness(12, 8), BackgroundColor = Colors.White };
-        var row = 0;
-        foreach (var (building, count) in HomeDashboardData.BirdsPerMonth)
-        {
-            birds.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            birds.Add(new Label { Text = building, TextColor = Ink }, 0, row);
-            birds.Add(new Label { Text = count.ToString(), FontAttributes = FontAttributes.Bold, TextColor = Ink }, 1, row);
-            row++;
-        }
-
-        var middleColumn = new VerticalStackLayout
-        {
-            Spacing = 16,
-            Children =
-            {
-                Panel(Heading("Reporters"), reporters),
-                Panel(Heading("Birds per month"), birds)
-            }
-        };
-
-        // To-Do card: same structure as AnalyzerPage (title, subtitle, count, scrolling list of reports to confirm).
-        var todoScroll = new ScrollView { VerticalOptions = LayoutOptions.Fill, Content = _todoList };
-        var todoContent = new Grid
-        {
-            RowSpacing = 10,
-            RowDefinitions =
-            {
-                new RowDefinition { Height = GridLength.Auto },
-                new RowDefinition { Height = GridLength.Auto },
-                new RowDefinition { Height = GridLength.Auto },
-                new RowDefinition { Height = GridLength.Star }
-            }
-        };
-        todoContent.Add(new Label { Text = "To-Do", FontSize = 23, FontAttributes = FontAttributes.Bold });
-        todoContent.Add(new Label { Text = "Reports awaiting your confirmation", FontSize = 13, TextColor = Color.FromArgb("#64748B") }, 0, 1);
+        var todoContent = new Grid { RowSpacing = 10, RowDefinitions = { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star) } };
+        todoContent.Add(new Label { Text = "To-Do", FontSize = 23, FontAttributes = FontAttributes.Bold, TextColor = Ink });
+        todoContent.Add(new Label { Text = "Submissions awaiting confirmation", FontSize = 13, TextColor = Muted }, 0, 1);
         todoContent.Add(_todoCount, 0, 2);
-        todoContent.Add(todoScroll, 0, 3);
+        todoContent.Add(new ScrollView { VerticalOptions = LayoutOptions.Fill, Content = _todoList }, 0, 3);
         var todoColumn = UiStyle.Card(todoContent);
-        Loaded += async (_, _) => await LoadTodoAsync();
 
-        // Wide layout like the mockup: map + reporters side by side, To-Do on the right.
         var body = new Grid
         {
-            ColumnDefinitions =
-            {
-                new ColumnDefinition(new GridLength(3, GridUnitType.Star)),
-                new ColumnDefinition(new GridLength(300)),
-                new ColumnDefinition(new GridLength(300))
-            },
+            ColumnDefinitions = { new ColumnDefinition(new GridLength(3, GridUnitType.Star)), new ColumnDefinition(new GridLength(300)), new ColumnDefinition(new GridLength(300)) },
             ColumnSpacing = 16,
             Padding = new Thickness(20)
         };
@@ -142,24 +83,13 @@ public sealed class MainPage : ContentPage
         body.Add(middleColumn, 1);
         body.Add(todoColumn, 2);
 
-        Content = new Grid
-        {
-            RowDefinitions = { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star) },
-            Children = { header }
-        };
-        var scroll = new ScrollView { Content = body };
-        ((Grid)Content).Add(scroll, 0, 1);
+        var pageGrid = new Grid { RowDefinitions = { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star) }, Children = { header } };
+        pageGrid.Add(new ScrollView { Content = body }, 0, 1);
+        Content = pageGrid;
+        Loaded += async (_, _) => await LoadDashboardAsync();
     }
 
-    private static Label Heading(string text) =>
-        new() { Text = text, FontSize = 20, TextColor = Ink };
-
-    private static Border Card(params View[] content)
-    {
-        var stack = new VerticalStackLayout { Padding = new Thickness(12, 8) };
-        foreach (var v in content) stack.Add(v);
-        return new Border { BackgroundColor = Colors.White, Stroke = Colors.Transparent, StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 6 }, Content = stack };
-    }
+    private static Label Heading(string text) => new() { Text = text, FontSize = 20, TextColor = Ink };
 
     private static Border Panel(View heading, View content) => new()
     {
@@ -170,107 +100,126 @@ public sealed class MainPage : ContentPage
         Content = new VerticalStackLayout { Spacing = 10, Children = { heading, content } }
     };
 
-    private async Task LoadTodoAsync()
+    private async Task LoadDashboardAsync()
     {
+        if (_loading) return;
+        _loading = true;
+        _connectionStatus.Text = "Loading Supabase data…";
         try
         {
-            var reports = await _dataSource.GetReportsAsync();
-            _pendingReports.Clear();
-            _pendingReports.AddRange(reports.Where(report => !report.IsConfirmed));
-            RenderTodoList();
+            var pendingTask = _businessLogic.GetPendingReportsAsync();
+            var reportersTask = _businessLogic.GetReporterAssignmentsAsync();
+            var buildingsTask = _businessLogic.GetBuildingConfirmationsLast30DaysAsync();
+            var monthlyTask = _businessLogic.GetMonthlyConfirmationsAsync();
+            var mapTask = _businessLogic.GetBuildingHotspotsAsync();
+            await Task.WhenAll(pendingTask, reportersTask, buildingsTask, monthlyTask, mapTask);
+
+            RenderTodoList(await pendingTask);
+            RenderReporters(await reportersTask);
+            RenderBuildingCounts(await buildingsTask);
+            var monthly = await monthlyTask;
+            _monthlyChart.Drawable = new ReportsBarChartDrawable(monthly.Months,
+                new[] { new MonthlySeries("Confirmed strikes", "#1682D4", monthly.Counts.ToArray()) });
+            _monthlyChart.Invalidate();
+            _homeMap.Show(await mapTask);
+            _connectionStatus.Text = "Supabase data loaded.";
         }
         catch (Exception ex)
         {
-            await DisplayAlertAsync("Unable to load reports", ex.Message, "OK");
+            _connectionStatus.Text = "Supabase load failed.";
+            await DisplayAlertAsync("Unable to load dashboard", ex.Message, "OK");
         }
+        finally { _loading = false; }
     }
 
-    protected override async void OnAppearing()
+    private void RenderReporters(IReadOnlyList<ReporterBuildingAssignment> reporters)
     {
-        base.OnAppearing();
-        if (!_businessLogic.IsAuthenticated)
-        {
-            _homeMap.Drawable = new CampusMapDrawable(HomeDashboardData.Buildings);
-            _homeMap.Invalidate();
-            return;
-        }
-
-        try
-        {
-            var buildings = await _businessLogic.GetBuildingHotspotsAsync();
-            _homeMap.Drawable = new CampusMapDrawable(buildings);
-            _homeMap.Invalidate();
-        }
-        catch
-        {
-            // Keep the existing sample map available when Supabase is unavailable.
-            _homeMap.Drawable = new CampusMapDrawable(HomeDashboardData.Buildings);
-            _homeMap.Invalidate();
-        }
+        _reportersTable.Children.Clear();
+        AddTableHeader(_reportersTable, "Reporter", "Assigned building");
+        if (reporters.Count == 0) _reportersTable.Children.Add(EmptyRow("No reporters found."));
+        foreach (var reporter in reporters) AddTableRow(_reportersTable, reporter.Reporter, reporter.Building);
     }
 
-    private void RenderTodoList()
+    private void RenderBuildingCounts(IReadOnlyList<BuildingConfirmationCount> buildings)
+    {
+        _buildingsTable.Children.Clear();
+        AddTableHeader(_buildingsTable, "Building", "Confirmed");
+        if (buildings.Count == 0) _buildingsTable.Children.Add(EmptyRow("No buildings found."));
+        foreach (var building in buildings) AddTableRow(_buildingsTable, building.Building, building.Count.ToString());
+    }
+
+    private static void AddTableHeader(VerticalStackLayout table, string first, string second)
+    {
+        var grid = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(new GridLength(1, GridUnitType.Auto)) }, Padding = new Thickness(8, 9), BackgroundColor = Color.FromArgb("#EAF3FC") };
+        grid.Add(new Label { Text = first, FontAttributes = FontAttributes.Bold, FontSize = 12, TextColor = Ink });
+        grid.Add(new Label { Text = second, FontAttributes = FontAttributes.Bold, FontSize = 12, TextColor = Ink, HorizontalTextAlignment = TextAlignment.End }, 1);
+        table.Children.Add(grid);
+    }
+
+    private static void AddTableRow(VerticalStackLayout table, string first, string second)
+    {
+        var grid = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(new GridLength(1, GridUnitType.Auto)) }, Padding = new Thickness(8, 9), ColumnSpacing = 8 };
+        grid.Add(new Label { Text = first, FontSize = 13, TextColor = Ink, VerticalTextAlignment = TextAlignment.Center });
+        grid.Add(new Label { Text = second, FontSize = 13, TextColor = Ink, HorizontalTextAlignment = TextAlignment.End, VerticalTextAlignment = TextAlignment.Center });
+        table.Children.Add(new Border { Stroke = Color.FromArgb("#E2E8F0"), StrokeThickness = 0.5, Content = grid });
+    }
+
+    private static View EmptyRow(string text) => new Label { Text = text, TextColor = Muted, FontSize = 13, Padding = new Thickness(8) };
+
+    private void RenderTodoList(IReadOnlyList<AnalyzerReport> reports)
     {
         _todoList.Children.Clear();
-        _todoCount.Text = $"{_pendingReports.Count} report(s) need review";
-        if (_pendingReports.Count == 0)
+        _todoCount.Text = $"{reports.Count} submission(s) need review";
+        if (reports.Count == 0)
         {
-            _todoList.Children.Add(new Label { Text = "All reports are confirmed.", TextColor = Color.FromArgb("#64748B") });
+            _todoList.Children.Add(new Label { Text = "All submissions are confirmed.", TextColor = Muted });
             return;
         }
 
-        foreach (var report in _pendingReports.ToList())
+        foreach (var report in reports)
         {
             var confirmButton = new Button
             {
-                Text = "Confirm report",
+                Text = "Confirm bird strike",
                 FontSize = 13,
                 Padding = new Thickness(12, 7),
-                HorizontalOptions = LayoutOptions.End
+                HorizontalOptions = LayoutOptions.Fill,
+                BackgroundColor = AccentBlue,
+                TextColor = Colors.White,
+                CornerRadius = 5
             };
-            confirmButton.Clicked += async (_, _) => await ConfirmAsync(report);
+            confirmButton.Clicked += async (_, _) => await ConfirmAsync(report.Id);
 
-            _todoList.Children.Add(UiStyle.Card(new VerticalStackLayout
+            var details = new VerticalStackLayout { Spacing = 5, Children =
             {
-                Spacing = 6,
-                Children =
-                {
-                    new Label { Text = $"{report.Building} — {report.Door}", FontSize = 15, FontAttributes = FontAttributes.Bold },
-                    new Label { Text = report.Reporter, FontSize = 13 },
-                    new Label { Text = report.ReportedAt.ToLocalTime().ToString("MMM d, yyyy  h:mm tt"), FontSize = 12, TextColor = Color.FromArgb("#64748B") },
-                    confirmButton
-                }
-            }));
+                new Label { Text = report.Reporter, FontSize = 15, FontAttributes = FontAttributes.Bold, TextColor = Ink },
+                new Label { Text = report.ReportDateText, FontSize = 13, TextColor = Ink },
+                new Label { Text = report.ReportTimeText, FontSize = 13, TextColor = Ink },
+                new Label { Text = $"{report.Building} — {report.Door}", FontSize = 12, TextColor = Muted },
+                confirmButton
+            }};
+            _todoList.Children.Add(new Border
+            {
+                BackgroundColor = Colors.White,
+                Stroke = Color.FromArgb("#D5E2EF"),
+                StrokeThickness = 1,
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 8 },
+                Padding = 12,
+                Content = details
+            });
         }
     }
 
-    private async Task ConfirmAsync(AnalyzerReport report)
+    private async Task ConfirmAsync(Guid submissionId)
     {
         try
         {
-            await _dataSource.ConfirmReportAsync(report.Id);
-            report.IsConfirmed = true;
-            _pendingReports.Remove(report);
-            RenderTodoList();
+            await _businessLogic.ConfirmReportAsync(submissionId);
+            await LoadDashboardAsync();
         }
         catch (Exception ex)
         {
             await DisplayAlertAsync("Unable to confirm report", ex.Message, "OK");
         }
     }
-
-    private async Task ConnectAsync()
-    {
-        _connectionStatus.Text = "Connecting…";
-        try
-        {
-            var rows = await _businessLogic.GetSampleItemsAsync();
-            _connectionStatus.Text = $"Connected. Read {rows.Count} sample row(s).";
-        }
-        catch (Exception ex)
-        {
-            _connectionStatus.Text = ex.Message;
-        }
-    }
 }
-

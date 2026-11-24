@@ -10,13 +10,6 @@ public sealed class Database : IDatabase
 
     public bool IsAuthenticated => _client?.Auth.CurrentSession is not null;
 
-    public async Task<IReadOnlyList<SampleItem>> GetSampleItemsAsync(CancellationToken cancellationToken = default)
-    {
-        var client = await GetClientAsync(cancellationToken);
-        var response = await client.From<SampleItem>().Get(cancellationToken);
-        return response.Models;
-    }
-
     public async Task<IReadOnlyList<BirdStrikeSubmission>> GetBirdStrikeSubmissionsAsync(CancellationToken cancellationToken = default)
     {
         var client = await GetClientAsync(cancellationToken);
@@ -31,13 +24,35 @@ public sealed class Database : IDatabase
         return response.Models;
     }
 
+    public async Task<IReadOnlyList<BirdStrikeConfirmation>> GetBirdStrikeConfirmationsAsync(CancellationToken cancellationToken = default)
+    {
+        var client = await GetClientAsync(cancellationToken);
+        var response = await client.From<BirdStrikeConfirmation>().Get(cancellationToken);
+        return response.Models;
+    }
+
+    public async Task<IReadOnlyList<Reporter>> GetReportersAsync(CancellationToken cancellationToken = default)
+    {
+        var client = await GetClientAsync(cancellationToken);
+        var response = await client.From<Reporter>().Get(cancellationToken);
+        return response.Models;
+    }
+
     public async Task ConfirmBirdStrikeSubmissionAsync(Guid submissionId, CancellationToken cancellationToken = default)
     {
         var client = await GetClientAsync(cancellationToken);
-        await client.From<BirdStrikeSubmission>()
-            .Where(submission => submission.SubmissionId == submissionId)
-            .Set(submission => submission.IsConfirmed, true)
-            .Update(cancellationToken: cancellationToken);
+        var existing = await client.From<BirdStrikeConfirmation>()
+            .Where(confirmation => confirmation.SubmissionId == submissionId)
+            .Get(cancellationToken);
+        if (existing.Models.Count > 0) return;
+
+        await client.From<BirdStrikeConfirmation>().Insert(new BirdStrikeConfirmation
+        {
+            SubmissionId = submissionId,
+            EntryDate = DateTime.Today,
+            EntryTime = DateTime.Now.TimeOfDay,
+            EntryConfirmed = true
+        }, cancellationToken: cancellationToken);
     }
 
     public async Task SignInAsync(string email, string password, CancellationToken cancellationToken = default)

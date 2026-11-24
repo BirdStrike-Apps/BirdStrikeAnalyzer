@@ -289,7 +289,7 @@ public sealed class AnalyzerPage : ContentPage
         _dataStatus.Text = "Loading Supabase reports…";
         try
         {
-            var reports = await _businessLogic.GetAnalyzerReportsAsync();
+            var reports = await _businessLogic.GetPendingReportsAsync();
             _reports.Clear();
             _reports.AddRange(reports);
             _pendingReports.Clear();
@@ -594,6 +594,8 @@ public sealed class AnalyzerReport
     public string Building { get; init; } = string.Empty;
     public string Door { get; init; } = string.Empty;
     public DateTimeOffset ReportedAt { get; init; }
+    public string ReportDateText { get; init; } = string.Empty;
+    public string ReportTimeText { get; init; } = string.Empty;
     public string Notes { get; init; } = string.Empty;
     public bool IsConfirmed { get; set; }
 }
