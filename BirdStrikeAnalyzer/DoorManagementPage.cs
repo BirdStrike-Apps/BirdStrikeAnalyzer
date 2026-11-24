@@ -1,5 +1,5 @@
 using BirdStrikeAnalyzer.Model;
-
+using System.Globalization;
 namespace BirdStrikeAnalyzer;
 
 public class DoorManagementPage : ContentPage
@@ -27,7 +27,24 @@ public class DoorManagementPage : ContentPage
         {
             await LoadDoorsAsync();
         };
+        var addDoorButton = new Button
+        {
+            Text = "Add Door"
+        };
 
+        addDoorButton.Clicked += async (sender, e) =>
+        {
+            addDoorButton.IsEnabled = false;
+
+            try
+            {
+                await AddDoorAsync();
+            }
+            finally
+            {
+                addDoorButton.IsEnabled = true;
+            }
+        };
         Content = new ScrollView
         {
             Content = new VerticalStackLayout
@@ -38,7 +55,8 @@ public class DoorManagementPage : ContentPage
                 {
                     UiStyle.Heading("Door Management"),
 
-                    _buildingPicker,
+                   _buildingPicker,
+addDoorButton,
 
                     UiStyle.Card(new VerticalStackLayout
                     {
@@ -64,7 +82,7 @@ public class DoorManagementPage : ContentPage
                         }
                     }),
 
-                    new Button { Text = "Add Door" }
+
                 }
             }
         };
@@ -137,8 +155,29 @@ public class DoorManagementPage : ContentPage
                     Text = $"Longitude: {door.Longitude}",
                     FontSize = 14
                 });
+                var editButton = new Button
+                {
+                    Text = "Edit Door",
+                    HorizontalOptions = LayoutOptions.Start
+                };
 
+                editButton.Clicked += async (sender, e) =>
+                {
+                    editButton.IsEnabled = false;
+
+                    try
+                    {
+                        await EditDoorAsync(door);
+                    }
+                    finally
+                    {
+                        editButton.IsEnabled = true;
+                    }
+                };
+
+                _doorList.Children.Add(editButton);
                 _doorList.Children.Add(UiStyle.Divider());
+
             }
 
             if (doors.Count == 0)
@@ -159,4 +198,152 @@ public class DoorManagementPage : ContentPage
                 "OK");
         }
     }
+    private async Task AddDoorAsync()
+    {
+        if (_buildingPicker.SelectedItem is not string buildingName)
+        {
+            await DisplayAlert("Error", "Select a building first.", "OK");
+            return;
+        }
+
+        try
+        {
+            var door = await DisplayPromptAsync(
+                "Add Door", "Enter door number:");
+
+            if (string.IsNullOrWhiteSpace(door))
+                return;
+
+            var latitudeInput = await DisplayPromptAsync(
+                "Add Door", "Enter latitude:");
+
+            if (latitudeInput is null)
+                return;
+
+            var longitudeInput = await DisplayPromptAsync(
+                "Add Door", "Enter longitude:");
+
+            if (longitudeInput is null)
+                return;
+
+            if (!double.TryParse(latitudeInput,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out double latitude) ||
+                !double.TryParse(longitudeInput,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out double longitude))
+            {
+                await DisplayAlert("Error", "Invalid coordinates.", "OK");
+                return;
+            }
+
+            await _businessLogic.AddDoorAsync(
+                buildingName, door, latitude, longitude);
+
+            await LoadDoorsAsync();
+
+            await DisplayAlert(
+                "Success", "Door added successfully.", "OK");
+        }
+        catch (ArgumentException ex)
+        {
+            await DisplayAlert("Invalid Input", ex.Message, "OK");
+        }
+        catch (InvalidOperationException ex)
+        {
+            await DisplayAlert("Error", ex.Message, "OK");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+            await DisplayAlert("Error", "Unable to add door.", "OK");
+        }
+    }
+
+    private async Task EditDoorAsync(BuildingDoors door)
+    {
+        try
+        {
+            // Edit the current door number.
+            var doorNumber = await DisplayPromptAsync(
+                "Edit Door",
+                "Enter door number:",
+                initialValue: door.Door);
+
+            if (string.IsNullOrWhiteSpace(doorNumber))
+                return;
+
+            // Edit the current latitude.
+            var latitudeInput = await DisplayPromptAsync(
+                "Edit Door",
+                "Enter latitude:",
+               initialValue: Convert.ToString(
+    door.Latitude, CultureInfo.InvariantCulture));
+
+            if (latitudeInput is null)
+                return;
+
+            // Edit the current longitude.
+            var longitudeInput = await DisplayPromptAsync(
+                "Edit Door",
+                "Enter longitude:",
+               initialValue: Convert.ToString(
+    door.Longitude, CultureInfo.InvariantCulture));
+
+            if (longitudeInput is null)
+                return;
+
+            // Validate coordinates.
+            if (!double.TryParse(latitudeInput,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out double latitude) ||
+                !double.TryParse(longitudeInput,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out double longitude))
+            {
+                await DisplayAlert(
+                    "Error", "Invalid coordinates.", "OK");
+
+                return;
+            }
+
+            // Update the existing door.
+            await _businessLogic.EditDoorAsync(
+                door.BuildingDoorId,
+                doorNumber,
+                latitude,
+                longitude);
+
+            // Refresh the door list.
+            await LoadDoorsAsync();
+
+            await DisplayAlert(
+                "Success",
+                "Door updated successfully.",
+                "OK");
+        }
+        catch (ArgumentException ex)
+        {
+            await DisplayAlert("Invalid Input", ex.Message, "OK");
+        }
+        catch (InvalidOperationException ex)
+        {
+            await DisplayAlert("Error", ex.Message, "OK");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+
+            await DisplayAlert(
+                "Error", "Unable to update door.", "OK");
+        }
+    }
+
+
+
+
 }
