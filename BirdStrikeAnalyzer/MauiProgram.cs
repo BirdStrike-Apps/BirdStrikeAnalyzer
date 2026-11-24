@@ -19,6 +19,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<BusinessLogic>();
         builder.Services.AddSingleton<AppShell>();
         builder.Services.AddTransient<MainPage>();
+        builder.Services.AddTransient<MapViewPage>();
         builder.Services.AddTransient<BirdStrikesPage>();
 
         // Analyzer starts with in-memory example data. Replace IAnalyzerDataSource

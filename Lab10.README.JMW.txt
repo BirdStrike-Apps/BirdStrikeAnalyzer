@@ -1,0 +1,24 @@
+Name: Joshua Waite
+
+Implemented Features:
+    For this lab, I used OpenAI's ChatGPT Codex to add database functionality
+to the Analyzer and Map View pages. After signing in with an account,
+like "user3@email.com" and "password", the Analyzer page shows the table
+with editable columns. The map view also shows areas where there are more
+bird collision reports. 
+
+How I Supervised AI:
+    I allowed GPT to generate the files for this project. After It
+finished generating them, I would test the functionality of every present
+feature to ensure that the AI did not break anything that had previously
+worked. If everything worked properly, I would make a commit and a pull
+request. If something was wrong, I would delete or undo the changes and
+prompt GPT again, providing more context, clearer instructions, or 
+examples of the desired output in an attempt to generate what I wanted.
+
+Problems:
+    My initial prompt caused the AI model to create three separate apps
+with the different features I wanted separately. I needed to regenerate
+the changes, detailing my need for cohesion within the app rather than
+for different adjacent projects. Everything worked after this regeneration,
+though.

@@ -11,6 +11,7 @@ public sealed class MainPage : ContentPage
     private static readonly Color Muted = Color.FromArgb("#64748B");
 
     private readonly BusinessLogic _businessLogic;
+    private readonly GraphicsView _homeMap;
     private readonly Label _connectionStatus = new()
     {
         Text = "Supabase has not been contacted.",
@@ -53,15 +54,15 @@ public sealed class MainPage : ContentPage
         var right = new HorizontalStackLayout { Spacing = 10, VerticalOptions = LayoutOptions.Center, Children = { _connectionStatus, connect } };
         header.Add(right, 1);
 
-        var map = new GraphicsView
+        _homeMap = new GraphicsView
         {
             Drawable = new CampusMapDrawable(HomeDashboardData.Buildings),
             MinimumHeightRequest = 300,
             BackgroundColor = Colors.White
         };
         var mapTap = new TapGestureRecognizer();
-        mapTap.Tapped += async (_, _) => await Shell.Current.GoToAsync(nameof(MapViewPage));
-        map.GestureRecognizers.Add(mapTap);
+        mapTap.Tapped += async (_, _) => await Shell.Current.GoToAsync("//mapview");
+        _homeMap.GestureRecognizers.Add(mapTap);
         var chart = new GraphicsView
         {
             Drawable = new ReportsBarChartDrawable(HomeDashboardData.Months, HomeDashboardData.Series),
@@ -69,7 +70,7 @@ public sealed class MainPage : ContentPage
             BackgroundColor = Colors.White
         };
 
-        var mapPanel = Panel(Heading("Bird reports by building"), map);
+        var mapPanel = Panel(Heading("Bird reports by building"), _homeMap);
         var chartPanel = Panel(Heading("Reports per month"), chart);
 
         var leftColumn = new Grid
@@ -181,6 +182,30 @@ public sealed class MainPage : ContentPage
         catch (Exception ex)
         {
             await DisplayAlertAsync("Unable to load reports", ex.Message, "OK");
+        }
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        if (!_businessLogic.IsAuthenticated)
+        {
+            _homeMap.Drawable = new CampusMapDrawable(HomeDashboardData.Buildings);
+            _homeMap.Invalidate();
+            return;
+        }
+
+        try
+        {
+            var buildings = await _businessLogic.GetBuildingHotspotsAsync();
+            _homeMap.Drawable = new CampusMapDrawable(buildings);
+            _homeMap.Invalidate();
+        }
+        catch
+        {
+            // Keep the existing sample map available when Supabase is unavailable.
+            _homeMap.Drawable = new CampusMapDrawable(HomeDashboardData.Buildings);
+            _homeMap.Invalidate();
         }
     }
 

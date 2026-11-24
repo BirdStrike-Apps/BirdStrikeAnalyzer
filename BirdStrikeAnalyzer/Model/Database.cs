@@ -8,6 +8,8 @@ public sealed class Database : IDatabase
     private readonly SemaphoreSlim _initializationLock = new(1, 1);
     private Client? _client;
 
+    public bool IsAuthenticated => _client?.Auth.CurrentSession is not null;
+
     public async Task<IReadOnlyList<SampleItem>> GetSampleItemsAsync(CancellationToken cancellationToken = default)
     {
         var client = await GetClientAsync(cancellationToken);
@@ -20,6 +22,22 @@ public sealed class Database : IDatabase
         var client = await GetClientAsync(cancellationToken);
         var response = await client.From<BirdStrikeSubmission>().Get(cancellationToken);
         return response.Models;
+    }
+
+    public async Task<IReadOnlyList<BuildingDoors>> GetBuildingDoorsAsync(CancellationToken cancellationToken = default)
+    {
+        var client = await GetClientAsync(cancellationToken);
+        var response = await client.From<BuildingDoors>().Get(cancellationToken);
+        return response.Models;
+    }
+
+    public async Task ConfirmBirdStrikeSubmissionAsync(Guid submissionId, CancellationToken cancellationToken = default)
+    {
+        var client = await GetClientAsync(cancellationToken);
+        await client.From<BirdStrikeSubmission>()
+            .Where(submission => submission.SubmissionId == submissionId)
+            .Set(submission => submission.IsConfirmed, true)
+            .Update(cancellationToken: cancellationToken);
     }
 
     public async Task SignInAsync(string email, string password, CancellationToken cancellationToken = default)
