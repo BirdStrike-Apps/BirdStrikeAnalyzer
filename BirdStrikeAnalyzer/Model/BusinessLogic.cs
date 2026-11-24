@@ -84,6 +84,139 @@ public sealed class BusinessLogic(IDatabase database)
             item.Count)).ToList();
     }
 
+
+    // Retrieve all unique building names from the database.
+    public async Task<IReadOnlyList<string>> GetBuildingsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var doors = await database.GetBuildingDoorsAsync(cancellationToken);
+
+        return doors
+            .Select(door => door.BuildingName)
+            .Distinct()
+            .OrderBy(name => name)
+            .ToList();
+    }
+
+    public async Task AddBuildingAsync(string buildingName,string door,double latitude,double longitude,CancellationToken cancellationToken = default)
+    {
+        // Validate building name.
+        if (string.IsNullOrWhiteSpace(buildingName))
+            throw new ArgumentException("Building name is required.");
+
+        // Validate door number.
+        if (string.IsNullOrWhiteSpace(door))
+            throw new ArgumentException("Door number is required.");
+
+        // Validate coordinates.
+        if (!double.IsFinite(latitude) || latitude < -90 || latitude > 90)
+            throw new ArgumentException("Invalid latitude.");
+
+        if (!double.IsFinite(longitude) || longitude < -180 || longitude > 180)
+            throw new ArgumentException("Invalid longitude.");
+
+        // Check whether the building already exists.
+        var existingBuildings = await GetBuildingsAsync(cancellationToken);
+
+        if (existingBuildings.Any(name =>
+            string.Equals(name.Trim(), buildingName.Trim(),
+                StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException("Building already exists.");
+        }
+
+        // Create a new building with its first door.
+        var buildingDoor = new BuildingDoors
+        {
+            BuildingDoorId = Guid.NewGuid(),
+            BuildingName = buildingName.Trim(),
+            Door = door.Trim(),
+            Latitude = latitude,
+            Longitude = longitude
+        };
+
+        // Save to Supabase through the database layer.
+        await database.AddBuildingDoorAsync(
+            buildingDoor, cancellationToken);
+    }
+    public async Task AddDoorAsync(
+    string buildingName,
+    string door,
+    double latitude,
+    double longitude,
+    CancellationToken cancellationToken = default)
+{
+    // Validate input.
+    if (string.IsNullOrWhiteSpace(buildingName))
+        throw new ArgumentException("Building name is required.");
+
+    if (string.IsNullOrWhiteSpace(door))
+        throw new ArgumentException("Door number is required.");
+
+    if (!double.IsFinite(latitude) || latitude < -90 || latitude > 90)
+        throw new ArgumentException("Invalid latitude.");
+
+    if (!double.IsFinite(longitude) || longitude < -180 || longitude > 180)
+        throw new ArgumentException("Invalid longitude.");
+
+    var existingDoors = await database.GetBuildingDoorsAsync(
+        cancellationToken);
+
+    // Verify that the building exists.
+    var building = existingDoors.FirstOrDefault(item =>
+        string.Equals(item.BuildingName, buildingName.Trim(),
+            StringComparison.OrdinalIgnoreCase));
+
+    if (building is null)
+        throw new InvalidOperationException("Building does not exist.");
+
+    // Prevent duplicate doors.
+    if (existingDoors.Any(item =>
+        string.Equals(item.BuildingName, building.BuildingName,
+            StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(item.Door, door.Trim(),
+            StringComparison.OrdinalIgnoreCase)))
+    {
+        throw new InvalidOperationException("Door already exists.");
+    }
+
+    // Create the new door.
+    var newDoor = new BuildingDoors
+    {
+        BuildingDoorId = Guid.NewGuid(),
+        BuildingName = building.BuildingName,
+        Door = door.Trim(),
+        Latitude = latitude,
+        Longitude = longitude
+    };
+
+    // Save to Supabase.
+    await database.AddBuildingDoorAsync(
+        newDoor, cancellationToken);
+}
+public async Task<IReadOnlyList<BuildingDoors>> GetDoorsAsync(
+    string buildingName,
+    CancellationToken cancellationToken = default)
+{
+    var doors = await database.GetBuildingDoorsAsync(
+        cancellationToken);
+
+    return doors
+        .Where(door => string.Equals(
+            door.BuildingName,
+            buildingName,
+            StringComparison.OrdinalIgnoreCase))
+        .OrderBy(door => door.Door)
+        .ToList();
+}
+
+
     private static float Normalize(double value, double min, double max, float inset) =>
         max == min ? 0.5f : inset + (float)((value - min) / (max - min)) * (1f - 2f * inset);
+
+
+
+
+
+
 }

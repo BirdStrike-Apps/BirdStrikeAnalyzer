@@ -8,4 +8,5 @@ public interface IDatabase
     Task ConfirmBirdStrikeSubmissionAsync(Guid submissionId, CancellationToken cancellationToken = default);
     bool IsAuthenticated { get; }
     Task SignInAsync(string email, string password, CancellationToken cancellationToken = default);
+    Task AddBuildingDoorAsync(BuildingDoors buildingDoor,CancellationToken cancellationToken = default);
 }
