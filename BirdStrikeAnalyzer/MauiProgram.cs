@@ -27,6 +27,12 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAnalyzerDataSource, SampleAnalyzerDataSource>();
         builder.Services.AddTransient<AnalyzerPage>();
 
+        Preferences.Set(
+            GeoapifyMapView.ApiKeyPreference,
+            "20e9fa2b068745e6af3c620f1a49f211"
+        );
+        
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif

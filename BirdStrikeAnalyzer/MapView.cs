@@ -9,7 +9,7 @@ public sealed class MapViewPage : ContentPage
     private static readonly Color Ink = Color.FromArgb("#101820");
     private static readonly Color Muted = Color.FromArgb("#64748B");
     private readonly BusinessLogic _businessLogic;
-    private readonly GraphicsView _map;
+    private readonly GeoapifyMapView _map;
     private readonly VerticalStackLayout _hotspotList = new() { Spacing = 8 };
     private readonly Label _status = new() { FontSize = 12, TextColor = Muted };
 
@@ -19,9 +19,8 @@ public sealed class MapViewPage : ContentPage
         Title = "Map View";
         BackgroundColor = Color.FromArgb("#F3F7FB");
 
-        _map = new GraphicsView
+        _map = new GeoapifyMapView
         {
-            Drawable = new CampusMapDrawable(HomeDashboardData.Buildings),
             BackgroundColor = Colors.White,
             HorizontalOptions = LayoutOptions.Fill,
             VerticalOptions = LayoutOptions.Fill
@@ -162,8 +161,7 @@ public sealed class MapViewPage : ContentPage
 
     private void RenderHotspots(IReadOnlyList<BuildingReportCount> buildings)
     {
-        _map.Drawable = new CampusMapDrawable(buildings);
-        _map.Invalidate();
+        _map.Show(buildings);
         _hotspotList.Children.Clear();
         if (buildings.Count == 0)
         {

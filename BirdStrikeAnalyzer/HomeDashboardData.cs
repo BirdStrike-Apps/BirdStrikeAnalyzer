@@ -1,7 +1,7 @@
 namespace BirdStrikeAnalyzer.Model;
 
 /// <summary>A building's position on the campus map (0..1 of the map area) and its total bird report count.</summary>
-public sealed record BuildingReportCount(string Name, float X, float Y, int Count);
+public sealed record BuildingReportCount(string Name, float X, float Y, int Count, double? Latitude = null, double? Longitude = null);
 
 public sealed record ReporterInfo(string Name, string Buildings);
 

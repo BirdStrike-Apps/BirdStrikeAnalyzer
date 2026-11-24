@@ -27,3 +27,27 @@ Do not put a Supabase secret/service-role key in a client application.
 The Shell tab bar switches between Home and About. The Home page opens a registered Details route, with Shell back navigation returning to Home.
 
 Build for Windows with `dotnet build BirdStrikeAnalyzer.csproj -f net10.0-windows10.0.19041.0` after restoring NuGet packages.
+
+## Geoapify maps
+
+The Home (`MainPage`) and expanded Map View (`MapViewPage`) now use the shared
+`GeoapifyMapView`, which renders Geoapify raster tiles with Leaflet. Hotspot
+coordinates from `building_doors.latitude` / `building_doors.longitude` are
+preserved by `GetBuildingHotspotsAsync` and displayed as clickable building
+markers. If a sample or older Supabase building row has no coordinates, the map
+uses Geoapify forward geocoding against its known campus address (or the building
+name plus the UW-Oshkosh campus) before placing the marker. The map uses Leaflet
+circle markers rather than its default image icons so markers render reliably in
+the Windows WebView2 control. The small status label at the bottom of the map
+reports how many building locations were plotted and whether any failed.
+
+Create an API key in your Geoapify account, then add it to the MAUI preferences
+before opening either page:
+
+```csharp
+Preferences.Set(GeoapifyMapView.ApiKeyPreference, "YOUR_GEOAPIFY_API_KEY");
+```
+
+For example, this can be placed in the app's startup initialization in
+`MauiProgram.CreateMauiApp()`. Do not commit a real API key to source control;
+restrict the key to the app's expected usage in the Geoapify dashboard.

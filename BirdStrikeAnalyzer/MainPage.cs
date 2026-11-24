@@ -11,7 +11,7 @@ public sealed class MainPage : ContentPage
     private static readonly Color Muted = Color.FromArgb("#64748B");
 
     private readonly BusinessLogic _businessLogic;
-    private readonly GraphicsView _homeMap;
+    private readonly GeoapifyMapView _homeMap;
     private readonly Label _connectionStatus = new()
     {
         Text = "Supabase has not been contacted.",
@@ -54,9 +54,8 @@ public sealed class MainPage : ContentPage
         var right = new HorizontalStackLayout { Spacing = 10, VerticalOptions = LayoutOptions.Center, Children = { _connectionStatus, connect } };
         header.Add(right, 1);
 
-        _homeMap = new GraphicsView
+        _homeMap = new GeoapifyMapView
         {
-            Drawable = new CampusMapDrawable(HomeDashboardData.Buildings),
             MinimumHeightRequest = 300,
             BackgroundColor = Colors.White
         };
@@ -190,22 +189,19 @@ public sealed class MainPage : ContentPage
         base.OnAppearing();
         if (!_businessLogic.IsAuthenticated)
         {
-            _homeMap.Drawable = new CampusMapDrawable(HomeDashboardData.Buildings);
-            _homeMap.Invalidate();
+            _homeMap.Show(HomeDashboardData.Buildings);
             return;
         }
 
         try
         {
             var buildings = await _businessLogic.GetBuildingHotspotsAsync();
-            _homeMap.Drawable = new CampusMapDrawable(buildings);
-            _homeMap.Invalidate();
+            _homeMap.Show(buildings);
         }
         catch
         {
             // Keep the existing sample map available when Supabase is unavailable.
-            _homeMap.Drawable = new CampusMapDrawable(HomeDashboardData.Buildings);
-            _homeMap.Invalidate();
+            _homeMap.Show(HomeDashboardData.Buildings);
         }
     }
 
